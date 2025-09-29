@@ -105,6 +105,56 @@ class HomeScreen extends StatelessWidget {
                                 Text('Birthday: ${profile['birthday'] != null ? 
                                   DateTime.fromMillisecondsSinceEpoch(profile['birthday'].millisecondsSinceEpoch).toString().split(' ')[0] 
                                   : 'Not set'}'),
+                                const SizedBox(height: 16),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPurple.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppTheme.primaryPurple.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Points',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${profile['points'] ?? 0}',
+                                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                              color: AppTheme.primaryPurple,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            'Rank',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${profile['rank'] ?? 'C'}',
+                                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                              color: AppTheme.primaryPurple,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             );
                           },

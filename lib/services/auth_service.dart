@@ -79,6 +79,8 @@ class AuthService {
         'lastName': lastName,
         'gender': gender,
         'birthday': birthday,
+        'points': 0,
+        'rank': 'C',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -94,6 +96,43 @@ class AuthService {
       return doc.data() as Map<String, dynamic>?;
     } catch (e) {
       throw Exception('Failed to get user profile: $e');
+    }
+  }
+
+  // Update user points
+  Future<void> updateUserPoints(String userId, int points) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'points': points,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update user points: $e');
+    }
+  }
+
+  // Update user rank
+  Future<void> updateUserRank(String userId, String rank) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'rank': rank,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update user rank: $e');
+    }
+  }
+
+  // Update both points and rank
+  Future<void> updateUserPointsAndRank(String userId, int points, String rank) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'points': points,
+        'rank': rank,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update user points and rank: $e');
     }
   }
 
