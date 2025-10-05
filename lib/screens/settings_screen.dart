@@ -4,6 +4,10 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'account_settings_screen.dart';
+import 'archive_screen.dart';
+import 'accessibility_settings_screen.dart';
+import 'conditions_settings_screen.dart';
+import 'others_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,7 +22,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -173,14 +177,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         
         _buildSettingsItem(
+          icon: Icons.archive,
+          title: 'Archive',
+          subtitle: 'View and restore deleted items',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const ArchiveScreen(),
+              ),
+            );
+          },
+        ),
+        
+        _buildSettingsItem(
           icon: Icons.accessibility,
           title: 'Accessibility',
           subtitle: 'Customize accessibility options',
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Accessibility settings coming soon!'),
-                backgroundColor: AppTheme.primaryPurple,
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const AccessibilitySettingsScreen(),
               ),
             );
           },
@@ -188,13 +204,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         
         _buildSettingsItem(
           icon: Icons.health_and_safety,
-          title: 'Condition',
+          title: 'Conditions',
           subtitle: 'Set your learning conditions',
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Learning conditions coming soon!'),
-                backgroundColor: AppTheme.primaryPurple,
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const ConditionsSettingsScreen(),
               ),
             );
           },
@@ -205,10 +220,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Others',
           subtitle: 'Additional settings and preferences',
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Other settings coming soon!'),
-                backgroundColor: AppTheme.primaryPurple,
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const OthersSettingsScreen(),
               ),
             );
           },

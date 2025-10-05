@@ -39,7 +39,7 @@ class CourseService {
           .get();
       return snapshot.docs
           .map((doc) => Course.fromFirestore(doc))
-          .where((course) => !course.isDeleted) // Filter in memory
+          .where((course) => !course.isDeleted && course.deletedAt == null) // Filter out deleted and archived
           .toList();
     } catch (e) {
       throw CourseException('Failed to fetch courses: $e');
@@ -186,6 +186,26 @@ class CourseService {
       return snapshot.docs.length;
     } catch (e) {
       throw CourseException('Failed to get courses count: $e');
+    }
+  }
+
+  // Archive course (soft delete)
+  Future<void> archiveCourse(String courseId) async {
+    try {
+      await _coursesCollection.doc(courseId).update({
+        'deletedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw CourseException('Failed to archive course: $e');
+    }
+  }
+
+  // Delete course forever (hard delete)
+  Future<void> deleteCourseForever(String courseId) async {
+    try {
+      await _coursesCollection.doc(courseId).delete();
+    } catch (e) {
+      throw CourseException('Failed to delete course forever: $e');
     }
   }
 }

@@ -46,7 +46,10 @@ class FlashcardService {
           .get();
       
       // Sort in memory instead of using orderBy to avoid index requirement
-      final flashcards = snapshot.docs.map((doc) => Flashcard.fromFirestore(doc)).toList();
+      final flashcards = snapshot.docs
+          .map((doc) => Flashcard.fromFirestore(doc))
+          .where((flashcard) => flashcard.deletedAt == null) // Filter out archived flashcards
+          .toList();
       flashcards.sort((a, b) {
         if (a.createdAt == null && b.createdAt == null) return 0;
         if (a.createdAt == null) return 1;
@@ -245,6 +248,37 @@ class FlashcardService {
       await batch.commit();
     } catch (e) {
       throw FlashcardException('Failed to delete all flashcards in deck: $e');
+    }
+  }
+
+  // Archive flashcard (soft delete)
+  Future<void> archiveFlashcard(String flashcardId) async {
+    try {
+      await _flashcardsCollection.doc(flashcardId).update({
+        'deletedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw FlashcardException('Failed to archive flashcard: $e');
+    }
+  }
+
+  // Restore flashcard from archive
+  Future<void> restoreFlashcard(String flashcardId) async {
+    try {
+      await _flashcardsCollection.doc(flashcardId).update({
+        'deletedAt': FieldValue.delete(),
+      });
+    } catch (e) {
+      throw FlashcardException('Failed to restore flashcard: $e');
+    }
+  }
+
+  // Delete flashcard forever (hard delete)
+  Future<void> deleteFlashcardForever(String flashcardId) async {
+    try {
+      await _flashcardsCollection.doc(flashcardId).delete();
+    } catch (e) {
+      throw FlashcardException('Failed to delete flashcard forever: $e');
     }
   }
 }

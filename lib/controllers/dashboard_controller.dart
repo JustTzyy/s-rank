@@ -5,12 +5,14 @@ import '../services/course_service.dart';
 import '../services/auth_service.dart';
 import '../services/rank_service.dart';
 import '../services/challenge_completion_service.dart';
+import '../services/global_rank_service.dart';
 
 class DashboardController extends ChangeNotifier {
   final CourseService _courseService = CourseService();
   final AuthService _authService = AuthService();
   final RankService _rankService = RankService();
   final ChallengeCompletionService _completionService = ChallengeCompletionService();
+  final GlobalRankService _globalRankService = GlobalRankService();
 
   List<Course> _courses = [];
   List<Course> _allCourses = []; // Store all courses for search
@@ -179,6 +181,16 @@ class DashboardController extends ChangeNotifier {
   // Refresh rank and points data
   Future<void> refreshRankAndPoints() async {
     await loadRankAndPoints();
+    
+    // Also update global rank for leaderboard
+    final user = _authService.currentUser;
+    if (user != null) {
+      try {
+        await _globalRankService.updateGlobalUserRank(user.uid);
+      } catch (e) {
+        print('Warning: Could not update global rank: $e');
+      }
+    }
   }
 
   // Add a new course
@@ -221,14 +233,14 @@ class DashboardController extends ChangeNotifier {
   Future<bool> deleteCourse(String id) async {
     try {
       _setLoading(true);
-      await _courseService.deleteCourse(id);
+      await _courseService.archiveCourse(id); // Use archive instead of delete
       await loadCourses(); // Refresh the list
       return true;
     } on CourseException catch (e) {
       _setError(e.message);
       return false;
     } catch (e) {
-      _setError('Failed to delete course: $e');
+      _setError('Failed to archive course: $e');
       return false;
     } finally {
       _setLoading(false);

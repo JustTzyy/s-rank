@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/course.dart';
 import '../models/deck.dart';
 import '../models/challenge_completion.dart';

@@ -6,6 +6,7 @@ class AppTheme {
   static const Color lightPurple = Color(0xFFE1BEE7);
   static const Color darkPurple = Color(0xFF7B1FA2);
   static const Color accentPurple = Color(0xFFBA68C8);
+  static const Color lightPurpleBackground = Color(0xFFFCFBFF); // Very light lavender background
   
   // Neutral colors
   static const Color backgroundColor = Color(0xFFFFFFFF);

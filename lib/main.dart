@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/session_manager.dart';
+import 'services/accessibility_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -21,6 +22,9 @@ void main() async {
     // Continue app startup even if Firebase initialization fails
   }
   
+  // Initialize accessibility service
+  await AccessibilityService().initialize();
+  
   runApp(const MyApp());
 }
 
@@ -29,17 +33,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Srank',
-      theme: AppTheme.lightTheme,
-      home: const AuthWrapper(),
+    final accessibilityService = AccessibilityService();
+    
+    return ListenableBuilder(
+      listenable: accessibilityService,
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Srank',
+          theme: accessibilityService.getThemeData(context),
+          home: const AuthWrapper(),
       routes: {
         '/home': (context) => const HomeScreen(),
         '/profile-setup': (context) => const ProfileSetupScreen(),
       },
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          data: MediaQuery.of(context).copyWith(
+            textScaleFactor: accessibilityService.fontScale,
+          ),
           child: child ?? const Scaffold(
             backgroundColor: Colors.white,
             body: Center(
@@ -53,6 +64,8 @@ class MyApp extends StatelessWidget {
             ),
           ),
         );
+      },
+    );
       },
     );
   }

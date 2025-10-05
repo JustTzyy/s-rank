@@ -1,57 +1,53 @@
 import 'package:flutter/material.dart';
-import '../models/course.dart';
-import '../controllers/dashboard_controller.dart';
+import '../models/flashcard.dart';
+import '../services/flashcard_service.dart';
 import '../theme/app_theme.dart';
 
-class EditCourseModal extends StatefulWidget {
-  final Course course;
-  final DashboardController dashboardController;
-  final VoidCallback? onCourseUpdated;
+class EditFlashcardModal extends StatefulWidget {
+  final Flashcard flashcard;
+  final VoidCallback? onFlashcardUpdated;
 
-  const EditCourseModal({
+  const EditFlashcardModal({
     super.key,
-    required this.course,
-    required this.dashboardController,
-    this.onCourseUpdated,
+    required this.flashcard,
+    this.onFlashcardUpdated,
   });
 
   @override
-  State<EditCourseModal> createState() => _EditCourseModalState();
+  State<EditFlashcardModal> createState() => _EditFlashcardModalState();
 }
 
-class _EditCourseModalState extends State<EditCourseModal> {
+class _EditFlashcardModalState extends State<EditFlashcardModal> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _instructorController = TextEditingController();
-  
+  final _frontController = TextEditingController();
+  final _backController = TextEditingController();
+  final FlashcardService _flashcardService = FlashcardService();
   bool _isLoading = false;
+  int _selectedDifficulty = 3;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill the form with existing course data
-    _titleController.text = widget.course.title;
-    _descriptionController.text = widget.course.description;
-    _instructorController.text = widget.course.instructor ?? '';
+    _frontController.text = widget.flashcard.front;
+    _backController.text = widget.flashcard.back;
+    _selectedDifficulty = widget.flashcard.difficulty;
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _instructorController.dispose();
+    _frontController.dispose();
+    _backController.dispose();
     super.dispose();
   }
 
-  Future<void> _updateCourse() async {
+  Future<void> _updateFlashcard() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Show confirmation dialog
     final confirmed = await _showConfirmationDialog(
-      title: 'Update Course',
-      content: 'Are you sure you want to update "${_titleController.text.trim()}"?',
-      confirmText: 'Update Course',
+      title: 'Update Flashcard',
+      content: 'Are you sure you want to update this flashcard?',
+      confirmText: 'Update Flashcard',
     );
 
     if (!confirmed) return;
@@ -59,39 +55,28 @@ class _EditCourseModalState extends State<EditCourseModal> {
     setState(() => _isLoading = true);
 
     try {
-      final updatedCourse = widget.course.copyWith(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        instructor: _instructorController.text.trim().isEmpty 
-            ? null 
-            : _instructorController.text.trim(),
+      final updatedFlashcard = widget.flashcard.copyWith(
+        front: _frontController.text.trim(),
+        back: _backController.text.trim(),
+        difficulty: _selectedDifficulty,
       );
 
-      final success = await widget.dashboardController.updateCourse(widget.course.id!, updatedCourse);
+      await _flashcardService.updateFlashcard(widget.flashcard.id!, updatedFlashcard);
 
       if (mounted) {
         Navigator.of(context).pop();
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Course updated successfully!'),
-              backgroundColor: AppTheme.primaryPurple,
-            ),
-          );
-          widget.onCourseUpdated?.call();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error updating course: ${widget.dashboardController.error ?? 'Unknown error'}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Flashcard updated successfully!'),
+            backgroundColor: AppTheme.primaryPurple,
+          ),
+        );
+        widget.onFlashcardUpdated?.call();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating course: $e')),
+          SnackBar(content: Text('Error updating flashcard: $e')),
         );
       }
     } finally {
@@ -188,7 +173,7 @@ class _EditCourseModalState extends State<EditCourseModal> {
                 
                 // Title
                 Text(
-                  'Edit Course',
+                  'Edit Flashcard',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -197,49 +182,14 @@ class _EditCourseModalState extends State<EditCourseModal> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Course Title Field
+                // Front Text Field
                 TextFormField(
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: 'Course Title',
-                    hintText: 'e.g., Introduction to Flutter',
-                    prefixIcon: Icon(Icons.book, color: AppTheme.primaryPurple),
-                    filled: true,
-                    fillColor: AppTheme.backgroundColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.borderColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.borderColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a course title';
-                    }
-                    if (value.trim().length < 3) {
-                      return 'Course title must be at least 3 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Course Description Field
-                TextFormField(
-                  controller: _descriptionController,
+                  controller: _frontController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'Describe what this course covers...',
-                    prefixIcon: Icon(Icons.description, color: AppTheme.primaryPurple),
+                    labelText: 'Front',
+                    hintText: 'Enter the question or prompt...',
+                    prefixIcon: Icon(Icons.quiz, color: AppTheme.primaryPurple),
                     filled: true,
                     fillColor: AppTheme.backgroundColor,
                     border: OutlineInputBorder(
@@ -258,23 +208,24 @@ class _EditCourseModalState extends State<EditCourseModal> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a course description';
+                      return 'Please enter the front text';
                     }
-                    if (value.trim().length < 10) {
-                      return 'Description must be at least 10 characters';
+                    if (value.trim().length < 3) {
+                      return 'Front text must be at least 3 characters';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
                 
-                // Instructor Field (Optional)
+                // Back Text Field
                 TextFormField(
-                  controller: _instructorController,
+                  controller: _backController,
+                  maxLines: 3,
                   decoration: InputDecoration(
-                    labelText: 'Instructor (Optional)',
-                    hintText: 'e.g., Dr. Smith, John Doe',
-                    prefixIcon: Icon(Icons.person_outline, color: AppTheme.primaryPurple),
+                    labelText: 'Back',
+                    hintText: 'Enter the answer or explanation...',
+                    prefixIcon: Icon(Icons.lightbulb, color: AppTheme.primaryPurple),
                     filled: true,
                     fillColor: AppTheme.backgroundColor,
                     border: OutlineInputBorder(
@@ -291,6 +242,57 @@ class _EditCourseModalState extends State<EditCourseModal> {
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter the back text';
+                    }
+                    if (value.trim().length < 3) {
+                      return 'Back text must be at least 3 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Difficulty Selector
+                Text(
+                  'Difficulty',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: List.generate(5, (index) {
+                    final difficulty = index + 1;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedDifficulty = difficulty),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _selectedDifficulty == difficulty
+                                ? AppTheme.primaryPurple
+                                : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            difficulty.toString(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _selectedDifficulty == difficulty
+                                  ? Colors.white
+                                  : Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
                 const SizedBox(height: 32),
                 
@@ -301,33 +303,28 @@ class _EditCourseModalState extends State<EditCourseModal> {
                       child: OutlinedButton(
                         onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(color: AppTheme.primaryPurple),
+                          foregroundColor: AppTheme.textPrimary,
+                          side: const BorderSide(color: AppTheme.borderColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                         ),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: AppTheme.primaryPurple,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: const Text('Cancel'),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _updateCourse,
+                        onPressed: _isLoading ? null : _updateFlashcard,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryPurple,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 2,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          elevation: 2,
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -338,12 +335,7 @@ class _EditCourseModalState extends State<EditCourseModal> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
-                                'Update Course',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                            : const Text('Update Flashcard'),
                       ),
                     ),
                   ],

@@ -295,7 +295,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: const Center(
           child: CircularProgressIndicator(),
         ),
@@ -522,8 +522,19 @@ class _StudyModeScreenState extends State<StudyModeScreen>
           controller: _answerController,
           decoration: InputDecoration(
             hintText: 'Type your answer here...',
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -533,6 +544,15 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _checkAnswer,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -614,6 +634,15 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _selectedOptionIndex != null ? _checkAnswer : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -627,8 +656,19 @@ class _StudyModeScreenState extends State<StudyModeScreen>
           controller: _answerController,
           decoration: InputDecoration(
             hintText: 'List the items (separated by commas)...',
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -639,6 +679,15 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _checkAnswer,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -677,8 +726,19 @@ class _StudyModeScreenState extends State<StudyModeScreen>
           controller: _answerController,
           decoration: InputDecoration(
             hintText: 'What is this?',
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -688,6 +748,15 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _checkAnswer,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -1002,6 +1071,14 @@ class _StudyModeScreenState extends State<StudyModeScreen>
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textPrimary,
+                        side: const BorderSide(color: AppTheme.borderColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                      ),
                       child: const Text('Back to Deck'),
                     ),
                   ),
@@ -1012,6 +1089,15 @@ class _StudyModeScreenState extends State<StudyModeScreen>
                         Navigator.of(context).pop();
                         // TODO: Start new study session
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryPurple,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                      ),
                       child: const Text('Study Again'),
                     ),
                   ),
@@ -1033,7 +1119,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],

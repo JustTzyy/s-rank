@@ -69,12 +69,12 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.lightPurpleBackground,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: AppTheme.lightPurpleBackground,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryPurple),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -89,7 +89,11 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 20),
                 Text(
                   'SIGN-UP',
-                  style: Theme.of(context).textTheme.headlineLarge,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
@@ -97,7 +101,11 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Email field
                 Text(
                   'Email',
-                  style: Theme.of(context).textTheme.labelLarge,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -105,6 +113,21 @@ class _SignupScreenState extends State<SignupScreen> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     hintText: 'Enter your email',
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -121,7 +144,11 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Password field
                 Text(
                   'Password',
-                  style: Theme.of(context).textTheme.labelLarge,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -129,6 +156,21 @@ class _SignupScreenState extends State<SignupScreen> {
                   obscureText: true,
                   decoration: const InputDecoration(
                     hintText: 'Enter your password',
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -145,7 +187,11 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Confirm Password field
                 Text(
                   'Confirm Password',
-                  style: Theme.of(context).textTheme.labelLarge,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -153,6 +199,21 @@ class _SignupScreenState extends State<SignupScreen> {
                   obscureText: true,
                   decoration: const InputDecoration(
                     hintText: 'Confirm your password',
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -179,7 +240,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     Expanded(
                       child: RichText(
                         text: TextSpan(
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSecondary,
+                          ),
                           children: [
                             const TextSpan(text: 'I accept the '),
                             WidgetSpan(
@@ -230,6 +294,15 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Signup button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _signUp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryPurple,
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  ),
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
@@ -249,7 +322,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     Text(
                       "Already have an account? ",
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),

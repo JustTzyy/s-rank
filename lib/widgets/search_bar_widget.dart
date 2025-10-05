@@ -62,31 +62,19 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            AppTheme.primaryPurple.withOpacity(0.02),
-          ],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _focusNode.hasFocus 
-              ? AppTheme.primaryPurple.withOpacity(0.4)
-              : AppTheme.primaryPurple.withOpacity(0.15),
-          width: 1.5,
+              ? AppTheme.primaryPurple.withOpacity(0.3)
+              : AppTheme.primaryPurple.withOpacity(0.1),
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryPurple.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.white,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

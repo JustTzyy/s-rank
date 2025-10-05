@@ -349,7 +349,7 @@ class _ChallengeScreenState extends State<ChallengeScreen>
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: const Center(
           child: CircularProgressIndicator(),
         ),
@@ -627,8 +627,19 @@ class _ChallengeScreenState extends State<ChallengeScreen>
           controller: _answerController,
           decoration: InputDecoration(
             hintText: 'Type your answer here...',
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -638,6 +649,15 @@ class _ChallengeScreenState extends State<ChallengeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _checkAnswer,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -719,6 +739,15 @@ class _ChallengeScreenState extends State<ChallengeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _selectedOptionIndex != null ? _checkAnswer : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -732,8 +761,19 @@ class _ChallengeScreenState extends State<ChallengeScreen>
           controller: _answerController,
           decoration: InputDecoration(
             hintText: 'List the items (separated by commas)...',
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -744,6 +784,15 @@ class _ChallengeScreenState extends State<ChallengeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _checkAnswer,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -782,8 +831,19 @@ class _ChallengeScreenState extends State<ChallengeScreen>
           controller: _answerController,
           decoration: InputDecoration(
             hintText: 'What is this?',
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
@@ -793,6 +853,15 @@ class _ChallengeScreenState extends State<ChallengeScreen>
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _checkAnswer,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          ),
           child: const Text('Check Answer'),
         ),
       ],
@@ -1094,6 +1163,14 @@ class _ChallengeScreenState extends State<ChallengeScreen>
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textPrimary,
+                        side: const BorderSide(color: AppTheme.borderColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                      ),
                       child: const Text('Back to Course'),
                     ),
                   ),
@@ -1104,6 +1181,15 @@ class _ChallengeScreenState extends State<ChallengeScreen>
                         Navigator.of(context).pop();
                         // TODO: Start new challenge
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryPurple,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                      ),
                       child: const Text('Try Again'),
                     ),
                   ),
@@ -1120,17 +1206,17 @@ class _ChallengeScreenState extends State<ChallengeScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withOpacity(0.15),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

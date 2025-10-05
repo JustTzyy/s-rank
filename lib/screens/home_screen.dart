@@ -6,10 +6,13 @@ import '../widgets/edit_course_modal.dart';
 import '../widgets/course_card.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/progress_dashboard.dart';
+import '../widgets/accessible_widget.dart';
+import '../services/accessibility_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'course_details_screen.dart';
 import 'settings_screen.dart';
+import 'leaderboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,9 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accessibilityService = AccessibilityService();
     
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+    return ListenableBuilder(
+      listenable: accessibilityService,
+      builder: (context, child) {
+        return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -76,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            AccessibleText(
                               'Dashboard',
                               style: TextStyle(
                                 fontSize: 32,
@@ -90,57 +97,35 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ],
                               ),
+                              semanticLabel: 'Dashboard title',
                             ),
                             const SizedBox(height: 4),
-                            Text(
+                            AccessibleText(
                               'Welcome back!',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppTheme.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
+                              semanticLabel: 'Welcome message',
                             ),
                           ],
                         ),
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => _controller.refreshRankAndPoints(),
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryPurple.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.refresh,
-                                  color: AppTheme.primaryPurple,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
                               onTap: () => _navigateToSettings(),
                               child: Container(
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      AppTheme.primaryPurple,
-                                      AppTheme.darkPurple,
-                                    ],
-                                  ),
+                                  color: AppTheme.primaryPurple,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppTheme.primaryPurple.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
                                   ],
                                 ),
@@ -334,6 +319,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+      },
+    );
   }
 
   Widget _buildStatsCards() {
@@ -376,26 +363,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            color.withOpacity(0.02),
-          ],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.white,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -463,20 +438,13 @@ class _HomeScreenState extends State<HomeScreen> {
       height: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF4CAF50),
-            const Color(0xFF45A049),
-          ],
-        ),
+        color: const Color(0xFF4CAF50),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4CAF50).withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -523,30 +491,43 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.stars,
-                  color: Colors.white,
-                  size: 16,
+          GestureDetector(
+            onTap: () => _navigateToLeaderboard(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  rank,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.stars,
                     color: Colors.white,
+                    size: 16,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  Text(
+                    rank,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -658,7 +639,8 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => AddCourseModal(
         onCourseAdded: () {
-          // Refresh handled automatically by stream
+          // Refresh the course list after adding a new course
+          _controller.loadCourses();
         },
       ),
     );
@@ -701,14 +683,14 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(16),
         ),
         title: Text(
-          'Delete Course',
+          'Archive Course',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: AppTheme.textPrimary,
           ),
         ),
         content: Text(
-          'Are you sure you want to delete "${course.title}"? This will also delete all decks, flashcards, and progress data in this course.',
+          'Are you sure you want to archive "${course.title}"? This will move the course and all its decks, flashcards, and progress data to the archive. You can restore it later.',
           style: TextStyle(
             color: AppTheme.textSecondary,
           ),
@@ -731,7 +713,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Course deleted successfully'),
+                      content: const Text('Course archived successfully'),
                       backgroundColor: AppTheme.primaryPurple,
                       behavior: SnackBarBehavior.floating,
                     ),
@@ -739,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error deleting course: ${_controller.error ?? 'Unknown error'}'),
+                      content: Text('Error archiving course: ${_controller.error ?? 'Unknown error'}'),
                       backgroundColor: Colors.red,
                       behavior: SnackBarBehavior.floating,
                     ),
@@ -754,7 +736,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Delete'),
+            child: const Text('Archive'),
           ),
         ],
       ),
@@ -765,6 +747,14 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const SettingsScreen(),
+      ),
+    );
+  }
+
+  void _navigateToLeaderboard() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const LeaderboardScreen(),
       ),
     );
   }

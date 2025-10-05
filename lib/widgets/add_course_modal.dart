@@ -233,6 +233,21 @@ class _AddCourseModalState extends State<AddCourseModal> {
         labelText: 'Course Title',
         hintText: 'e.g., Flutter Development',
         prefixIcon: Icon(Icons.book, color: AppTheme.primaryPurple),
+        filled: true,
+        fillColor: AppTheme.backgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
@@ -254,6 +269,21 @@ class _AddCourseModalState extends State<AddCourseModal> {
         labelText: 'Description',
         hintText: 'Brief description of the course',
         prefixIcon: Icon(Icons.description, color: AppTheme.primaryPurple),
+        filled: true,
+        fillColor: AppTheme.backgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
@@ -275,6 +305,21 @@ class _AddCourseModalState extends State<AddCourseModal> {
         hintText: 'e.g., Dr. Smith',
         prefixIcon: Icon(Icons.person, color: AppTheme.primaryPurple),
         helperText: 'Leave empty if you are the instructor',
+        filled: true,
+        fillColor: AppTheme.backgroundColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
       validator: (value) {
         // Instructor is now optional
@@ -292,6 +337,14 @@ class _AddCourseModalState extends State<AddCourseModal> {
         Expanded(
           child: OutlinedButton(
             onPressed: _isLoading ? null : _cancel,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.textPrimary,
+              side: const BorderSide(color: AppTheme.borderColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            ),
             child: const Text('Cancel'),
           ),
         ),
@@ -299,6 +352,15 @@ class _AddCourseModalState extends State<AddCourseModal> {
         Expanded(
           child: ElevatedButton(
             onPressed: _isLoading ? null : _addCourse,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryPurple,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            ),
             child: _isLoading
                 ? const SizedBox(
                     height: 20,

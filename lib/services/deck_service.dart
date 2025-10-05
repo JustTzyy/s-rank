@@ -46,7 +46,10 @@ class DeckService {
           .get();
       
       // Sort in memory instead of using orderBy to avoid index requirement
-      final decks = snapshot.docs.map((doc) => Deck.fromFirestore(doc)).toList();
+      final decks = snapshot.docs
+          .map((doc) => Deck.fromFirestore(doc))
+          .where((deck) => deck.deletedAt == null) // Filter out archived decks
+          .toList();
       decks.sort((a, b) {
         if (a.createdAt == null && b.createdAt == null) return 0;
         if (a.createdAt == null) return 1;
@@ -180,6 +183,37 @@ class DeckService {
       return snapshot.docs.map((doc) => Deck.fromFirestore(doc)).toList();
     } catch (e) {
       throw DeckException('Failed to fetch all decks: $e');
+    }
+  }
+
+  // Archive deck (soft delete)
+  Future<void> archiveDeck(String deckId) async {
+    try {
+      await _decksCollection.doc(deckId).update({
+        'deletedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw DeckException('Failed to archive deck: $e');
+    }
+  }
+
+  // Restore deck from archive
+  Future<void> restoreDeck(String deckId) async {
+    try {
+      await _decksCollection.doc(deckId).update({
+        'deletedAt': FieldValue.delete(),
+      });
+    } catch (e) {
+      throw DeckException('Failed to restore deck: $e');
+    }
+  }
+
+  // Delete deck forever (hard delete)
+  Future<void> deleteDeckForever(String deckId) async {
+    try {
+      await _decksCollection.doc(deckId).delete();
+    } catch (e) {
+      throw DeckException('Failed to delete deck forever: $e');
     }
   }
 }

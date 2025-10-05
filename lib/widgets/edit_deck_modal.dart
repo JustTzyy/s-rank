@@ -1,57 +1,48 @@
 import 'package:flutter/material.dart';
-import '../models/course.dart';
-import '../controllers/dashboard_controller.dart';
+import '../models/deck.dart';
+import '../services/deck_service.dart';
 import '../theme/app_theme.dart';
 
-class EditCourseModal extends StatefulWidget {
-  final Course course;
-  final DashboardController dashboardController;
-  final VoidCallback? onCourseUpdated;
+class EditDeckModal extends StatefulWidget {
+  final Deck deck;
+  final VoidCallback? onDeckUpdated;
 
-  const EditCourseModal({
+  const EditDeckModal({
     super.key,
-    required this.course,
-    required this.dashboardController,
-    this.onCourseUpdated,
+    required this.deck,
+    this.onDeckUpdated,
   });
 
   @override
-  State<EditCourseModal> createState() => _EditCourseModalState();
+  State<EditDeckModal> createState() => _EditDeckModalState();
 }
 
-class _EditCourseModalState extends State<EditCourseModal> {
+class _EditDeckModalState extends State<EditDeckModal> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _instructorController = TextEditingController();
-  
+  final DeckService _deckService = DeckService();
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill the form with existing course data
-    _titleController.text = widget.course.title;
-    _descriptionController.text = widget.course.description;
-    _instructorController.text = widget.course.instructor ?? '';
+    _titleController.text = widget.deck.title;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _descriptionController.dispose();
-    _instructorController.dispose();
     super.dispose();
   }
 
-  Future<void> _updateCourse() async {
+  Future<void> _updateDeck() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Show confirmation dialog
     final confirmed = await _showConfirmationDialog(
-      title: 'Update Course',
+      title: 'Update Deck',
       content: 'Are you sure you want to update "${_titleController.text.trim()}"?',
-      confirmText: 'Update Course',
+      confirmText: 'Update Deck',
     );
 
     if (!confirmed) return;
@@ -59,39 +50,26 @@ class _EditCourseModalState extends State<EditCourseModal> {
     setState(() => _isLoading = true);
 
     try {
-      final updatedCourse = widget.course.copyWith(
+      final updatedDeck = widget.deck.copyWith(
         title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        instructor: _instructorController.text.trim().isEmpty 
-            ? null 
-            : _instructorController.text.trim(),
       );
 
-      final success = await widget.dashboardController.updateCourse(widget.course.id!, updatedCourse);
+      await _deckService.updateDeck(widget.deck.id!, updatedDeck);
 
       if (mounted) {
         Navigator.of(context).pop();
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Course updated successfully!'),
-              backgroundColor: AppTheme.primaryPurple,
-            ),
-          );
-          widget.onCourseUpdated?.call();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error updating course: ${widget.dashboardController.error ?? 'Unknown error'}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Deck updated successfully!'),
+            backgroundColor: AppTheme.primaryPurple,
+          ),
+        );
+        widget.onDeckUpdated?.call();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating course: $e')),
+          SnackBar(content: Text('Error updating deck: $e')),
         );
       }
     } finally {
@@ -188,7 +166,7 @@ class _EditCourseModalState extends State<EditCourseModal> {
                 
                 // Title
                 Text(
-                  'Edit Course',
+                  'Edit Deck',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -197,13 +175,13 @@ class _EditCourseModalState extends State<EditCourseModal> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Course Title Field
+                // Deck Title Field
                 TextFormField(
                   controller: _titleController,
                   decoration: InputDecoration(
-                    labelText: 'Course Title',
-                    hintText: 'e.g., Introduction to Flutter',
-                    prefixIcon: Icon(Icons.book, color: AppTheme.primaryPurple),
+                    labelText: 'Deck Title',
+                    hintText: 'e.g., Vocabulary, Formulas, etc.',
+                    prefixIcon: Icon(Icons.folder, color: AppTheme.primaryPurple),
                     filled: true,
                     fillColor: AppTheme.backgroundColor,
                     border: OutlineInputBorder(
@@ -222,75 +200,13 @@ class _EditCourseModalState extends State<EditCourseModal> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a course title';
+                      return 'Please enter a deck title';
                     }
-                    if (value.trim().length < 3) {
-                      return 'Course title must be at least 3 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Course Description Field
-                TextFormField(
-                  controller: _descriptionController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'Describe what this course covers...',
-                    prefixIcon: Icon(Icons.description, color: AppTheme.primaryPurple),
-                    filled: true,
-                    fillColor: AppTheme.backgroundColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.borderColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.borderColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter a course description';
-                    }
-                    if (value.trim().length < 10) {
-                      return 'Description must be at least 10 characters';
+                    if (value.trim().length < 2) {
+                      return 'Deck title must be at least 2 characters';
                     }
                     return null;
                   },
-                ),
-                const SizedBox(height: 16),
-                
-                // Instructor Field (Optional)
-                TextFormField(
-                  controller: _instructorController,
-                  decoration: InputDecoration(
-                    labelText: 'Instructor (Optional)',
-                    hintText: 'e.g., Dr. Smith, John Doe',
-                    prefixIcon: Icon(Icons.person_outline, color: AppTheme.primaryPurple),
-                    filled: true,
-                    fillColor: AppTheme.backgroundColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.borderColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.borderColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryPurple, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  ),
                 ),
                 const SizedBox(height: 32),
                 
@@ -301,33 +217,28 @@ class _EditCourseModalState extends State<EditCourseModal> {
                       child: OutlinedButton(
                         onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(color: AppTheme.primaryPurple),
+                          foregroundColor: AppTheme.textPrimary,
+                          side: const BorderSide(color: AppTheme.borderColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                         ),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: AppTheme.primaryPurple,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: const Text('Cancel'),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _updateCourse,
+                        onPressed: _isLoading ? null : _updateDeck,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryPurple,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 2,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          elevation: 2,
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -338,12 +249,7 @@ class _EditCourseModalState extends State<EditCourseModal> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
-                                'Update Course',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                            : const Text('Update Deck'),
                       ),
                     ),
                   ],

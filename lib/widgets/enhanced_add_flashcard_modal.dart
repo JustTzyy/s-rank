@@ -426,6 +426,14 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.textPrimary,
+                          side: const BorderSide(color: AppTheme.borderColor),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                        ),
                         child: const Text('Cancel'),
                       ),
                     ),
@@ -433,6 +441,15 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _addFlashcard,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryPurple,
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                        ),
                         child: _isLoading
                             ? const SizedBox(
                                 height: 20,
