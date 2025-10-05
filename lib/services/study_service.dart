@@ -4,8 +4,13 @@ import '../models/flashcard.dart';
 import '../services/flashcard_service.dart';
 
 class StudyService {
-  static final StudyService _instance = StudyService._internal();
-  factory StudyService() => _instance;
+  static StudyService? _instance;
+  
+  factory StudyService() {
+    _instance ??= StudyService._internal();
+    return _instance!;
+  }
+  
   StudyService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

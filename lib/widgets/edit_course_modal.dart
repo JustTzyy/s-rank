@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import '../models/course.dart';
-import '../services/course_service.dart';
+import '../controllers/dashboard_controller.dart';
 import '../theme/app_theme.dart';
 
 class EditCourseModal extends StatefulWidget {
   final Course course;
+  final DashboardController dashboardController;
   final VoidCallback? onCourseUpdated;
 
   const EditCourseModal({
     super.key,
     required this.course,
+    required this.dashboardController,
     this.onCourseUpdated,
   });
 
@@ -23,7 +25,6 @@ class _EditCourseModalState extends State<EditCourseModal> {
   final _descriptionController = TextEditingController();
   final _instructorController = TextEditingController();
   
-  final CourseService _courseService = CourseService();
   bool _isLoading = false;
 
   @override
@@ -66,17 +67,26 @@ class _EditCourseModalState extends State<EditCourseModal> {
             : _instructorController.text.trim(),
       );
 
-      await _courseService.updateCourse(widget.course.id!, updatedCourse);
+      final success = await widget.dashboardController.updateCourse(widget.course.id!, updatedCourse);
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Course updated successfully!'),
-            backgroundColor: AppTheme.primaryPurple,
-          ),
-        );
-        widget.onCourseUpdated?.call();
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Course updated successfully!'),
+              backgroundColor: AppTheme.primaryPurple,
+            ),
+          );
+          widget.onCourseUpdated?.call();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating course: ${widget.dashboardController.error ?? 'Unknown error'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -2,8 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/deck.dart';
 
 class DeckService {
-  static final DeckService _instance = DeckService._internal();
-  factory DeckService() => _instance;
+  static DeckService? _instance;
+  
+  factory DeckService() {
+    _instance ??= DeckService._internal();
+    return _instance!;
+  }
+  
   DeckService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -17,6 +22,7 @@ class DeckService {
   Stream<List<Deck>> getDecksStreamForCourse(String courseId) {
     return _decksCollection
         .where('courseId', isEqualTo: courseId)
+        .where('isDeleted', isEqualTo: false)
         .snapshots()
         .map((snapshot) {
       final decks = snapshot.docs.map((doc) => Deck.fromFirestore(doc)).toList();
@@ -36,6 +42,7 @@ class DeckService {
     try {
       final snapshot = await _decksCollection
           .where('courseId', isEqualTo: courseId)
+          .where('isDeleted', isEqualTo: false)
           .get();
       
       // Sort in memory instead of using orderBy to avoid index requirement
@@ -81,6 +88,7 @@ class DeckService {
     try {
       final updateData = {
         'title': deck.title,
+        'description': deck.description,
         'updatedAt': FieldValue.serverTimestamp(),
       };
       
@@ -90,10 +98,14 @@ class DeckService {
     }
   }
 
-  // Delete a deck
+  // Soft delete a deck
   Future<void> deleteDeck(String id) async {
     try {
-      await _decksCollection.doc(id).delete();
+      await _decksCollection.doc(id).update({
+        'isDeleted': true,
+        'deletedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       throw DeckException('Failed to delete deck: $e');
     }
@@ -104,6 +116,7 @@ class DeckService {
     try {
       final snapshot = await _decksCollection
           .where('courseId', isEqualTo: courseId)
+          .where('isDeleted', isEqualTo: false)
           .get();
       return snapshot.docs
           .map((doc) => Deck.fromFirestore(doc))

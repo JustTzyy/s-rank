@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'security_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final SecurityService _securityService = SecurityService();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -134,6 +136,251 @@ class AuthService {
     } catch (e) {
       throw Exception('Failed to update user points and rank: $e');
     }
+  }
+
+  // Update display name
+  Future<void> updateDisplayName(String displayName) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(displayName);
+        await user.reload();
+      }
+    } catch (e) {
+      throw Exception('Failed to update display name: $e');
+    }
+  }
+
+  // Update email
+  Future<void> updateEmail(String email) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.updateEmail(email);
+        await user.reload();
+      }
+    } catch (e) {
+      throw Exception('Failed to update email: $e');
+    }
+  }
+
+  // Update user profile in Firestore
+  Future<void> updateUserProfile({
+    String? displayName,
+    String? gender,
+    DateTime? birthday,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final updateData = <String, dynamic>{
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        
+        if (displayName != null) {
+          updateData['displayName'] = displayName;
+        }
+        if (gender != null) {
+          updateData['gender'] = gender;
+        }
+        if (birthday != null) {
+          updateData['birthday'] = birthday;
+        }
+        if (additionalData != null) {
+          updateData.addAll(additionalData);
+        }
+        
+        await _firestore.collection('users').doc(user.uid).update(updateData);
+      }
+    } catch (e) {
+      throw Exception('Failed to update user profile: $e');
+    }
+  }
+
+  // Change password
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null && user.email != null) {
+        // Re-authenticate user
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: currentPassword,
+        );
+        await user.reauthenticateWithCredential(credential);
+        
+        // Update password
+        await user.updatePassword(newPassword);
+      }
+    } catch (e) {
+      throw Exception('Failed to change password: $e');
+    }
+  }
+
+  // Send email verification
+  Future<void> sendEmailVerification() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('No user logged in');
+      }
+      
+      if (user.emailVerified) {
+        throw Exception('Email is already verified');
+      }
+      
+      await user.sendEmailVerification();
+    } catch (e) {
+      throw Exception('Failed to send email verification: $e');
+    }
+  }
+
+  // Delete account
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Delete user data from Firestore first
+        await _firestore.collection('users').doc(user.uid).delete();
+        
+        // Delete user account
+        await user.delete();
+      }
+    } catch (e) {
+      throw Exception('Failed to delete account: $e');
+    }
+  }
+
+  // Track login attempt
+  Future<void> trackLoginAttempt({
+    required bool isSuccessful,
+    String? failureReason,
+    String? deviceInfo,
+    String? location,
+    String? ipAddress,
+    String? userAgent,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).collection('loginHistory').add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'isSuccessful': isSuccessful,
+          'failureReason': failureReason,
+          'deviceInfo': deviceInfo ?? 'Unknown Device',
+          'location': location ?? 'Unknown Location',
+          'ipAddress': ipAddress ?? 'Unknown IP',
+          'userAgent': userAgent ?? 'Unknown Browser',
+        });
+
+        // Check for suspicious activity if login was successful
+        if (isSuccessful) {
+          final isSuspicious = await _securityService.isSuspiciousLogin(
+            deviceInfo: deviceInfo ?? 'Unknown Device',
+            userAgent: userAgent ?? 'Unknown Browser',
+            location: location,
+          );
+
+          if (isSuspicious) {
+            await _securityService.sendSecurityAlert(
+              type: 'suspicious_login',
+              message: 'Suspicious login detected from new device or location',
+              additionalData: {
+                'deviceInfo': deviceInfo,
+                'userAgent': userAgent,
+                'location': location,
+                'ipAddress': ipAddress,
+              },
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('Error tracking login attempt: $e');
+    }
+  }
+
+  // Get device info for login tracking
+  String getDeviceInfo() {
+    // In a real app, you'd use device_info_plus package
+    return 'Mobile Device';
+  }
+
+  // Get user agent for login tracking
+  String getUserAgent() {
+    // In a real app, you'd get actual user agent
+    return 'Flutter App';
+  }
+
+  // Create or update active session
+  Future<void> createOrUpdateActiveSession({
+    required String sessionId,
+    required String deviceInfo,
+    String? location,
+    String? ipAddress,
+    String? userAgent,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // First, mark all other sessions as not current
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('activeSessions')
+            .where('isCurrentSession', isEqualTo: true)
+            .get()
+            .then((snapshot) {
+          for (final doc in snapshot.docs) {
+            doc.reference.update({'isCurrentSession': false});
+          }
+        });
+
+        // Create or update the current session
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('activeSessions')
+            .doc(sessionId)
+            .set({
+          'deviceInfo': deviceInfo,
+          'location': location ?? 'Unknown Location',
+          'ipAddress': ipAddress ?? 'Unknown IP',
+          'userAgent': userAgent ?? 'Unknown Browser',
+          'isActive': true,
+          'isCurrentSession': true,
+          'lastActivity': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      print('Error creating/updating active session: $e');
+    }
+  }
+
+  // Update session activity
+  Future<void> updateSessionActivity(String sessionId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('activeSessions')
+            .doc(sessionId)
+            .update({
+          'lastActivity': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error updating session activity: $e');
+    }
+  }
+
+  // Generate unique session ID
+  String generateSessionId() {
+    return DateTime.now().millisecondsSinceEpoch.toString();
   }
 
   // Sign out

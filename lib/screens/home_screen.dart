@@ -5,9 +5,11 @@ import '../widgets/add_course_modal.dart';
 import '../widgets/edit_course_modal.dart';
 import '../widgets/course_card.dart';
 import '../widgets/search_bar_widget.dart';
+import '../widgets/progress_dashboard.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'course_details_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +25,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _controller.initialize();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh rank and points when screen becomes visible
+    _controller.refreshRankAndPoints();
   }
 
   @override
@@ -93,32 +102,56 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppTheme.primaryPurple,
-                                AppTheme.darkPurple,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryPurple.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => _controller.refreshRankAndPoints(),
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryPurple.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.refresh,
+                                  color: AppTheme.primaryPurple,
+                                  size: 20,
+                                ),
                               ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 24,
-                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => _navigateToSettings(),
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppTheme.primaryPurple,
+                                      AppTheme.darkPurple,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.primaryPurple.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -183,6 +216,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 
                 const SizedBox(height: 20),
+                
+                // Progress Dashboard
+                const ProgressDashboard(),
                 
                 // Courses List
                 Expanded(
@@ -301,28 +337,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStatsCards() {
-    final profile = _controller.userProfile;
-    final points = profile?['points'] ?? 0;
-    final rank = profile?['rank'] ?? 'C';
+    final studiedCards = _controller.studiedCards;
+    final currentRank = _controller.currentRank;
+    final totalPoints = _controller.totalPoints;
     
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            '$points',
-            'Studied Card',
-            AppTheme.primaryPurple,
-            Icons.school,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            rank,
-            'Current Rank',
-            const Color(0xFFFFC107),
-            Icons.emoji_events,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 200, // Fixed height for both cards
+                child: _buildStatCard(
+                  '$studiedCards',
+                  'Studied Cards',
+                  AppTheme.primaryPurple,
+                  Icons.school,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: SizedBox(
+                height: 200, // Same fixed height
+                child: _buildPointsAndRankCard(
+                  totalPoints,
+                  currentRank?.name ?? 'C-Rank',
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -406,6 +450,103 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 14,
               color: AppTheme.textSecondary,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPointsAndRankCard(int points, String rank) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF4CAF50),
+            const Color(0xFF45A049),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4CAF50).withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.emoji_events,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$points',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Points',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.stars,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  rank,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -526,7 +667,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onCourseCardTapped(Course course) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CourseDetailsScreen(course: course),
+        builder: (context) => CourseDetailsScreen(
+          course: course,
+          onDataChanged: () {
+            // Refresh dashboard when data changes
+            _controller.refreshRankAndPoints();
+          },
+        ),
       ),
     );
   }
@@ -538,8 +685,9 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => EditCourseModal(
         course: course,
+        dashboardController: _controller,
         onCourseUpdated: () {
-          // Refresh handled automatically by stream
+          // Refresh handled automatically by DashboardController.updateCourse()
         },
       ),
     );
@@ -560,7 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         content: Text(
-          'Are you sure you want to delete "${course.title}"?',
+          'Are you sure you want to delete "${course.title}"? This will also delete all decks, flashcards, and progress data in this course.',
           style: TextStyle(
             color: AppTheme.textSecondary,
           ),
@@ -609,6 +757,14 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Delete'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SettingsScreen(),
       ),
     );
   }

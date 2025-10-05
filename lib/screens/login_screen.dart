@@ -47,6 +47,21 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (userCredential != null) {
+        // Track successful login
+        await _authService.trackLoginAttempt(
+          isSuccessful: true,
+          deviceInfo: _authService.getDeviceInfo(),
+          userAgent: _authService.getUserAgent(),
+        );
+        
+        // Create active session
+        final sessionId = _authService.generateSessionId();
+        await _authService.createOrUpdateActiveSession(
+          sessionId: sessionId,
+          deviceInfo: _authService.getDeviceInfo(),
+          userAgent: _authService.getUserAgent(),
+        );
+        
         // Check if user has completed profile setup
         final profile = await _authService.getUserProfile(userCredential.user!.uid);
         
@@ -63,6 +78,14 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
+      // Track failed login
+      await _authService.trackLoginAttempt(
+        isSuccessful: false,
+        failureReason: e.toString(),
+        deviceInfo: _authService.getDeviceInfo(),
+        userAgent: _authService.getUserAgent(),
+      );
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
@@ -82,6 +105,21 @@ class _LoginScreenState extends State<LoginScreen> {
       final userCredential = await _authService.signInWithGoogle();
       
       if (userCredential != null) {
+        // Track successful login
+        await _authService.trackLoginAttempt(
+          isSuccessful: true,
+          deviceInfo: _authService.getDeviceInfo(),
+          userAgent: _authService.getUserAgent(),
+        );
+        
+        // Create active session
+        final sessionId = _authService.generateSessionId();
+        await _authService.createOrUpdateActiveSession(
+          sessionId: sessionId,
+          deviceInfo: _authService.getDeviceInfo(),
+          userAgent: _authService.getUserAgent(),
+        );
+        
         // Check if user has completed profile setup
         final profile = await _authService.getUserProfile(userCredential.user!.uid);
         
@@ -98,6 +136,14 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
+      // Track failed login
+      await _authService.trackLoginAttempt(
+        isSuccessful: false,
+        failureReason: e.toString(),
+        deviceInfo: _authService.getDeviceInfo(),
+        userAgent: _authService.getUserAgent(),
+      );
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),

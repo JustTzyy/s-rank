@@ -71,15 +71,7 @@ class DeckCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    deck.progressText,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6C6C6C),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   // Progress bar
                   LinearProgressIndicator(
                     value: deck.progress,

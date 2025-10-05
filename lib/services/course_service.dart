@@ -2,8 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/course.dart';
 
 class CourseService {
-  static final CourseService _instance = CourseService._internal();
-  factory CourseService() => _instance;
+  static CourseService? _instance;
+  
+  factory CourseService() {
+    _instance ??= CourseService._internal();
+    return _instance!;
+  }
+  
   CourseService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

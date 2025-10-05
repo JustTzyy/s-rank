@@ -2,8 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/flashcard.dart';
 
 class FlashcardService {
-  static final FlashcardService _instance = FlashcardService._internal();
-  factory FlashcardService() => _instance;
+  static FlashcardService? _instance;
+  
+  factory FlashcardService() {
+    _instance ??= FlashcardService._internal();
+    return _instance!;
+  }
+  
   FlashcardService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -17,6 +22,7 @@ class FlashcardService {
   Stream<List<Flashcard>> getFlashcardsStreamForDeck(String deckId) {
     return _flashcardsCollection
         .where('deckId', isEqualTo: deckId)
+        .where('isDeleted', isEqualTo: false)
         .snapshots()
         .map((snapshot) {
       final flashcards = snapshot.docs.map((doc) => Flashcard.fromFirestore(doc)).toList();
@@ -36,6 +42,7 @@ class FlashcardService {
     try {
       final snapshot = await _flashcardsCollection
           .where('deckId', isEqualTo: deckId)
+          .where('isDeleted', isEqualTo: false)
           .get();
       
       // Sort in memory instead of using orderBy to avoid index requirement
@@ -113,10 +120,14 @@ class FlashcardService {
     }
   }
 
-  // Delete a flashcard
+  // Soft delete a flashcard
   Future<void> deleteFlashcard(String id) async {
     try {
-      await _flashcardsCollection.doc(id).delete();
+      await _flashcardsCollection.doc(id).update({
+        'isDeleted': true,
+        'deletedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       throw FlashcardException('Failed to delete flashcard: $e');
     }
@@ -127,6 +138,7 @@ class FlashcardService {
     try {
       final snapshot = await _flashcardsCollection
           .where('deckId', isEqualTo: deckId)
+          .where('isDeleted', isEqualTo: false)
           .get();
       return snapshot.docs
           .map((doc) => Flashcard.fromFirestore(doc))

@@ -803,6 +803,15 @@ class _EditFlashcardModalState extends State<_EditFlashcardModal> {
   Future<void> _updateFlashcard() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Show confirmation dialog
+    final confirmed = await _showConfirmationDialog(
+      title: 'Update Flashcard',
+      content: 'Are you sure you want to update this flashcard?',
+      confirmText: 'Update Flashcard',
+    );
+
+    if (!confirmed) return;
+
     setState(() => _isLoading = true);
 
     try {
@@ -835,6 +844,56 @@ class _EditFlashcardModalState extends State<_EditFlashcardModal> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<bool> _showConfirmationDialog({
+    required String title,
+    required String content,
+    required String confirmText,
+  }) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        content: Text(
+          content,
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(confirmText),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 
   @override

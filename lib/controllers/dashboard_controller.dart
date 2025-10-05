@@ -1,11 +1,16 @@
 import 'package:flutter/foundation.dart';
 import '../models/course.dart';
+import '../models/rank.dart';
 import '../services/course_service.dart';
 import '../services/auth_service.dart';
+import '../services/rank_service.dart';
+import '../services/challenge_completion_service.dart';
 
 class DashboardController extends ChangeNotifier {
   final CourseService _courseService = CourseService();
   final AuthService _authService = AuthService();
+  final RankService _rankService = RankService();
+  final ChallengeCompletionService _completionService = ChallengeCompletionService();
 
   List<Course> _courses = [];
   List<Course> _allCourses = []; // Store all courses for search
@@ -14,6 +19,11 @@ class DashboardController extends ChangeNotifier {
   String _searchQuery = '';
   String? _error;
   Map<String, dynamic>? _userProfile;
+  
+  // Rank and points data
+  int _totalPoints = 0;
+  Rank? _currentRank;
+  int _studiedCards = 0;
 
   // Getters
   List<Course> get courses => _courses;
@@ -25,6 +35,11 @@ class DashboardController extends ChangeNotifier {
   int get coursesCount => _courses.length;
   bool get hasSearchResults => _searchQuery.isNotEmpty;
   
+  // Rank and points getters
+  int get totalPoints => _totalPoints;
+  Rank? get currentRank => _currentRank;
+  int get studiedCards => _studiedCards;
+  
   // Get current user
   get currentUser => _authService.currentUser;
 
@@ -33,6 +48,7 @@ class DashboardController extends ChangeNotifier {
     await Future.wait([
       loadCourses(),
       loadUserProfile(),
+      loadRankAndPoints(),
     ]);
   }
 
@@ -69,6 +85,100 @@ class DashboardController extends ChangeNotifier {
     } catch (e) {
       debugPrint('Failed to load user profile: $e');
     }
+  }
+
+  // Load rank and points data
+  Future<void> loadRankAndPoints() async {
+    try {
+      final user = _authService.currentUser;
+      if (user != null) {
+        // Get all user completions to calculate total points and studied cards
+        int totalPoints = 0;
+        int studiedCards = 0;
+        Rank? currentRank;
+
+        // Get all courses for this user
+        final userCourses = await _courseService.getCoursesForUser(user.uid);
+        
+        // Method 1: Get points from user ranks (per course)
+        for (final course in userCourses) {
+          try {
+            // Get user rank for this course
+            final userRank = await _rankService.getUserRank(user.uid, course.id!);
+            if (userRank != null) {
+              totalPoints += userRank.totalPoints;
+              studiedCards += userRank.totalQuestions;
+              
+              // Get the current rank
+              if (currentRank == null) {
+                currentRank = await _rankService.getRankById(userRank.currentRankId);
+              }
+            }
+          } catch (e) {
+            // Continue if one course fails
+            print('Warning: Could not load rank for course ${course.id}: $e');
+          }
+        }
+
+        // Method 2: Also get points from challenge completions (backup method)
+        if (totalPoints == 0) {
+          try {
+            // Get all completions for this user across all courses
+            for (final course in userCourses) {
+              final completions = await _completionService.getUserCompletions(user.uid, course.id!);
+              for (final completion in completions) {
+                totalPoints += completion.pointsEarned;
+                studiedCards += completion.totalQuestions;
+              }
+            }
+          } catch (e) {
+            print('Warning: Could not load completions: $e');
+          }
+        }
+
+        // If still no rank found, get the rank for the total points
+        if (currentRank == null && totalPoints > 0) {
+          try {
+            currentRank = await _rankService.getRankForPoints(totalPoints);
+          } catch (e) {
+            print('Warning: Could not get rank for points: $e');
+          }
+        }
+
+        print('Dashboard loaded - Total Points: $totalPoints, Studied Cards: $studiedCards, Rank: ${currentRank?.name}');
+        
+        _totalPoints = totalPoints;
+        _currentRank = currentRank;
+        _studiedCards = studiedCards;
+        
+        // Update user profile with the calculated total points and rank
+        if (totalPoints > 0 || currentRank != null) {
+          try {
+            await _authService.updateUserPointsAndRank(
+              user.uid,
+              totalPoints,
+              currentRank?.name ?? 'C-Rank',
+            );
+            print('Updated user profile from dashboard - Points: $totalPoints, Rank: ${currentRank?.name ?? 'C-Rank'}');
+          } catch (e) {
+            print('Warning: Could not update user profile from dashboard: $e');
+          }
+        }
+        
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Warning: Could not load rank and points: $e');
+      // Set default values
+      _totalPoints = 0;
+      _currentRank = null;
+      _studiedCards = 0;
+    }
+  }
+
+  // Refresh rank and points data
+  Future<void> refreshRankAndPoints() async {
+    await loadRankAndPoints();
   }
 
   // Add a new course

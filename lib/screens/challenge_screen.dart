@@ -1,88 +1,83 @@
 import 'package:flutter/material.dart';
-import '../models/study_session.dart';
+import '../models/deck.dart';
 import '../models/flashcard.dart';
-import '../services/study_service.dart';
+import '../models/rank.dart';
+import '../models/challenge_completion.dart';
 import '../services/flashcard_service.dart';
-import '../services/preferences_service.dart';
-import '../services/progress_tracking_service.dart';
+import '../services/rank_service.dart';
+import '../services/challenge_completion_service.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
-class StudyModeScreen extends StatefulWidget {
-  final String deckId;
-  final StudyMode mode;
+class ChallengeScreen extends StatefulWidget {
+  final Deck deck;
+  final String courseId;
+  final VoidCallback? onChallengeCompleted;
 
-  const StudyModeScreen({
+  const ChallengeScreen({
     super.key,
-    required this.deckId,
-    this.mode = StudyMode.review,
+    required this.deck,
+    required this.courseId,
+    this.onChallengeCompleted,
   });
 
   @override
-  State<StudyModeScreen> createState() => _StudyModeScreenState();
+  State<ChallengeScreen> createState() => _ChallengeScreenState();
 }
 
-class _StudyModeScreenState extends State<StudyModeScreen>
+class _ChallengeScreenState extends State<ChallengeScreen>
     with TickerProviderStateMixin {
-  final StudyService _studyService = StudyService();
   final FlashcardService _flashcardService = FlashcardService();
-  final PreferencesService _preferencesService = PreferencesService();
-  final ProgressTrackingService _progressTrackingService = ProgressTrackingService();
+  final RankService _rankService = RankService();
+  final ChallengeCompletionService _completionService = ChallengeCompletionService();
+  final AuthService _authService = AuthService();
   
-  StudySession? _session;
   List<Flashcard> _flashcards = [];
-  int _currentCardIndex = 0;
-  bool _isAnswerRevealed = false;
+  int _currentQuestionIndex = 0;
   bool _isLoading = true;
-  bool _isSessionComplete = false;
+  bool _isQuizComplete = false;
+  bool _isAnswerRevealed = false;
   
-  // Study preferences
-  StudyPreferences? _studyPreferences;
+  // Quiz state
+  int _totalPoints = 0;
+  int _correctAnswers = 0;
+  int _totalQuestions = 0;
+  UserRank? _userRank;
+  Rank? _currentRank;
   
-  // For different question types
-  int? _selectedOptionIndex; // For multiple choice
-  final TextEditingController _answerController = TextEditingController(); // For typing answers
+  // Completion tracking
+  DateTime? _sessionStartTime;
+  int _sessionPoints = 0;
+  String? _currentUserId;
+  
+  // Answer state
+  int? _selectedOptionIndex;
+  final TextEditingController _answerController = TextEditingController();
   bool _isAnswerCorrect = false;
+  DateTime? _questionStartTime;
   
-  late AnimationController _flipController;
   late AnimationController _progressController;
-  late Animation<double> _flipAnimation;
   late Animation<double> _progressAnimation;
-  
-  DateTime? _cardStartTime;
-  Duration _totalStudyTime = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _startStudySession();
+    _loadQuiz();
   }
 
   @override
   void dispose() {
-    _flipController.dispose();
     _progressController.dispose();
     _answerController.dispose();
     super.dispose();
   }
 
   void _initializeAnimations() {
-    _flipController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
-    _flipAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _flipController,
-      curve: Curves.easeInOut,
-    ));
     
     _progressAnimation = Tween<double>(
       begin: 0.0,
@@ -93,59 +88,59 @@ class _StudyModeScreenState extends State<StudyModeScreen>
     ));
   }
 
-  Future<void> _startStudySession() async {
+  Future<void> _loadQuiz() async {
     try {
       setState(() => _isLoading = true);
       
-      // Load study preferences
-      _studyPreferences = await _preferencesService.getStudyPreferences();
-      
-      // Start study session
-      _session = await _studyService.startStudySession(
-        deckId: widget.deckId,
-        userId: 'current_user', // TODO: Get from auth service
-        mode: widget.mode,
-      );
-      
-      // Load flashcards
-      _flashcards = await _flashcardService.getFlashcardsForDeck(widget.deckId);
+      // Load flashcards for the deck
+      _flashcards = await _flashcardService.getFlashcardsForDeck(widget.deck.id!);
       
       if (_flashcards.isEmpty) {
-        throw Exception('No flashcards available for study');
+        throw Exception('No questions available in this deck');
       }
       
-      // Apply study preferences
-      if (_studyPreferences?.shuffleCards == true) {
-        _flashcards.shuffle();
+      // Shuffle questions
+      _flashcards.shuffle();
+      
+      // Get current user ID
+      final user = _authService.currentUser;
+      if (user == null) {
+        throw Exception('No user logged in');
+      }
+      _currentUserId = user.uid;
+      
+      // Load user's current rank
+      _userRank = await _rankService.getUserRank(_currentUserId!, widget.courseId);
+      if (_userRank != null) {
+        _currentRank = await _rankService.getRankById(_userRank!.currentRankId);
       }
       
       setState(() {
         _isLoading = false;
-        _cardStartTime = DateTime.now();
+        _sessionStartTime = DateTime.now();
+        _questionStartTime = DateTime.now();
+        // Reset session counters for new challenge
+        _correctAnswers = 0;
+        _sessionPoints = 0;
+        _currentQuestionIndex = 0;
       });
       
       _progressController.forward();
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        String errorMessage = e.toString();
-        if (errorMessage.contains('No cards are due for review yet') || 
-            errorMessage.contains('No difficult cards found')) {
-          _showNoCardsDialog(errorMessage);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error starting study session: $e')),
-          );
-          Navigator.of(context).pop();
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading quiz: $e')),
+        );
+        Navigator.of(context).pop();
       }
     }
   }
 
   void _checkAnswer() {
-    if (_currentCardIndex >= _flashcards.length) return;
+    if (_currentQuestionIndex >= _flashcards.length) return;
     
-    final card = _flashcards[_currentCardIndex];
+    final card = _flashcards[_currentQuestionIndex];
     bool isCorrect = false;
     
     switch (card.type) {
@@ -167,14 +162,11 @@ class _StudyModeScreenState extends State<StudyModeScreen>
       _isAnswerCorrect = isCorrect;
       _isAnswerRevealed = true;
     });
-    _flipController.forward();
   }
 
   bool _checkBasicAnswer(Flashcard card) {
     final userAnswer = _answerController.text.trim().toLowerCase();
     final correctAnswer = card.back.toLowerCase();
-    
-    // Simple string comparison - you can make this more sophisticated
     return userAnswer == correctAnswer;
   }
 
@@ -194,98 +186,160 @@ class _StudyModeScreenState extends State<StudyModeScreen>
     final userItems = userAnswer.split(',').map((item) => item.trim()).toSet();
     final correctItems = card.enumerationItems!.map((item) => item.toLowerCase()).toSet();
     
-    // Check if all correct items are present (order doesn't matter)
     return correctItems.every((item) => userItems.contains(item));
   }
 
   bool _checkIdentificationAnswer(Flashcard card) {
     final userAnswer = _answerController.text.trim().toLowerCase();
     final correctAnswer = card.identifier?.toLowerCase() ?? card.back.toLowerCase();
-    
     return userAnswer == correctAnswer;
   }
 
-  void _rateCard(CardRating rating) async {
-    if (_session == null || _currentCardIndex >= _flashcards.length) return;
+  void _submitAnswer() async {
+    if (_currentQuestionIndex >= _flashcards.length) return;
     
     try {
-      final card = _flashcards[_currentCardIndex];
-      final timeSpent = DateTime.now().difference(_cardStartTime!);
+      final card = _flashcards[_currentQuestionIndex];
+      final timeSpent = DateTime.now().difference(_questionStartTime!);
       
-      // Submit answer
-      await _studyService.submitAnswer(
-        sessionId: _session!.id!,
-        cardId: card.id!,
-        rating: rating,
+      // Calculate points
+      final pointsEarned = _rankService.calculatePoints(
+        difficulty: card.difficulty,
         isCorrect: _isAnswerCorrect,
         timeSpent: timeSpent,
+        basePoints: 1, // Not used in new system, but required parameter
       );
       
-      // Update total study time
-      _totalStudyTime += timeSpent;
+      // Track session points
+      _sessionPoints += pointsEarned;
       
-      // Move to next card or complete session
-      if (_currentCardIndex + 1 >= _flashcards.length) {
-        await _completeSession();
+            // Track correct answers
+      if (_isAnswerCorrect) {
+        _correctAnswers++;
+      }
+      
+      // Update user rank
+      _userRank = await _rankService.updateUserPoints(
+        userId: _currentUserId!,
+        courseId: widget.courseId,
+        pointsEarned: pointsEarned,
+        isCorrect: _isAnswerCorrect,
+      );
+      
+      // Update current rank
+      _currentRank = await _rankService.getRankById(_userRank!.currentRankId);
+      
+      // Update quiz state
+      setState(() {
+        _totalPoints = _userRank!.totalPoints;
+        // Don't reset _correctAnswers here - it should only increment during the session
+        _totalQuestions = _userRank!.totalQuestions;
+      });
+      
+      // Move to next question or complete quiz
+      if (_currentQuestionIndex + 1 >= _flashcards.length) {
+        await _completeQuiz();
       } else {
-        // Check if auto-advance is enabled
-        if (_studyPreferences?.autoAdvance == true) {
-          // Auto-advance after a short delay
-          Future.delayed(const Duration(milliseconds: 1500), () {
-            if (mounted) {
-              _nextCard();
-            }
-          });
-        } else {
-          _nextCard();
-        }
+        _nextQuestion();
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Error submitting answer';
+        if (e.toString().contains('No rank found for points')) {
+          errorMessage = 'Ranking system is not set up. Please try again.';
+        } else if (e.toString().contains('Failed to update user points')) {
+          errorMessage = 'Failed to save your progress. Please try again.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error rating card: $e')),
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () {
+                // Retry the answer submission
+                _submitAnswer();
+              },
+            ),
+          ),
         );
       }
     }
   }
 
-  void _nextCard() {
+  void _nextQuestion() {
     setState(() {
-      _currentCardIndex++;
+      _currentQuestionIndex++;
       _isAnswerRevealed = false;
       _isAnswerCorrect = false;
       _selectedOptionIndex = null;
       _answerController.clear();
-      _cardStartTime = DateTime.now();
+      _questionStartTime = DateTime.now();
     });
     
-    _flipController.reset();
     _progressController.forward();
   }
 
-  Future<void> _completeSession() async {
+  Future<void> _completeQuiz() async {
     try {
-      if (_session != null) {
-        _session = await _studyService.completeStudySession(_session!.id!);
-        
-        // Track progress based on user preferences
-        await _progressTrackingService.trackStudySession(
-          deckId: widget.deckId,
-          duration: _totalStudyTime.inMinutes,
-          cardsStudied: _flashcards.length,
-          correctAnswers: _session?.correctAnswers ?? 0,
-          incorrectAnswers: _session?.incorrectAnswers ?? 0,
-          accuracy: _session?.score ?? 0.0,
+      // Save completion data
+      final sessionDuration = DateTime.now().difference(_sessionStartTime!);
+      final accuracy = _totalQuestions > 0 ? (_correctAnswers / _totalQuestions) * 100 : 0.0;
+      
+      final completion = ChallengeCompletion(
+        userId: _currentUserId!,
+        courseId: widget.courseId,
+        deckId: widget.deck.id!,
+        completedAt: DateTime.now(),
+        score: _correctAnswers,
+        totalQuestions: _totalQuestions,
+        correctAnswers: _correctAnswers,
+        accuracy: accuracy,
+        timeSpent: sessionDuration,
+        pointsEarned: _sessionPoints,
+      );
+      
+      await _completionService.saveCompletion(completion);
+      
+      // Update user profile with total points and rank
+      try {
+        await _authService.updateUserPointsAndRank(
+          _currentUserId!,
+          _userRank?.totalPoints ?? 0,
+          _currentRank?.name ?? 'C-Rank',
         );
+        print('Updated user profile - Points: ${_userRank?.totalPoints ?? 0}, Rank: ${_currentRank?.name ?? 'C-Rank'}');
+      } catch (e) {
+        print('Warning: Could not update user profile: $e');
       }
       
       setState(() {
-        _isSessionComplete = true;
+        _isQuizComplete = true;
       });
+      
+      // Notify parent that challenge is completed
+      if (widget.onChallengeCompleted != null) {
+        widget.onChallengeCompleted!();
+      }
     } catch (e) {
+      // Still show completion screen even if saving fails
+      setState(() {
+        _isQuizComplete = true;
+      });
+      
+      // Notify parent that challenge is completed even if saving failed
+      if (widget.onChallengeCompleted != null) {
+        widget.onChallengeCompleted!();
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error completing session: $e')),
+          SnackBar(
+            content: Text('Challenge completed! (Progress may not be saved)'),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
     }
@@ -302,7 +356,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
       );
     }
 
-    if (_isSessionComplete) {
+    if (_isQuizComplete) {
       return _buildCompletionScreen();
     }
 
@@ -313,9 +367,9 @@ class _StudyModeScreenState extends State<StudyModeScreen>
           children: [
             _buildHeader(),
             Expanded(
-              child: _buildCard(),
+              child: _buildQuestionCard(_flashcards[_currentQuestionIndex]),
             ),
-            _buildRatingButtons(),
+            _buildActionButtons(),
           ],
         ),
       ),
@@ -347,7 +401,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
               ),
               const Spacer(),
               Text(
-                _session?.modeText ?? 'Study Mode',
+                'Challenge: ${widget.deck.title}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -364,9 +418,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
                 ),
                 child: Center(
                   child: Text(
-                    _flashcards.isEmpty 
-                        ? '0/0' 
-                        : '${_currentCardIndex + 1}/${_flashcards.length}',
+                    '${_currentQuestionIndex + 1}/${_flashcards.length}',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -379,39 +431,74 @@ class _StudyModeScreenState extends State<StudyModeScreen>
           ),
           const SizedBox(height: 20),
           // Progress bar
-            AnimatedBuilder(
-              animation: _progressAnimation,
-              builder: (context, child) {
-                final progress = _flashcards.isEmpty 
-                    ? 0.0 
-                    : _progressAnimation.value * ((_currentCardIndex + 1) / _flashcards.length);
-                return LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPurple),
-                  minHeight: 8,
-                );
-              },
-            ),
+          AnimatedBuilder(
+            animation: _progressAnimation,
+            builder: (context, child) {
+              return LinearProgressIndicator(
+                value: _progressAnimation.value * ((_currentQuestionIndex + 1) / _flashcards.length),
+                backgroundColor: Colors.grey[300],
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPurple),
+                minHeight: 8,
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          // Points and correct display
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem('Points', '$_sessionPoints', Colors.blue),
+              _buildStatItem('Correct', '$_correctAnswers/${_flashcards.length}', Colors.green),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCard() {
-    if (_currentCardIndex >= _flashcards.length) {
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildQuestionCard(Flashcard card, {Key? key}) {
+    if (_currentQuestionIndex >= _flashcards.length) {
       return const Center(
-        child: Text('No more cards'),
+        child: Text('No more questions'),
       );
     }
-
-    final card = _flashcards[_currentCardIndex];
     
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Container(
+        key: key,
         width: double.infinity,
-        height: 500, // Increased height to prevent overflow
+        height: 500,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -426,32 +513,23 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
+            duration: const Duration(milliseconds: 300),
             transitionBuilder: (child, animation) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                )),
-                child: FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
+              return FadeTransition(
+                opacity: animation,
+                child: child,
               );
             },
             child: _isAnswerRevealed 
-                ? _buildCardBack(card, key: const ValueKey('back'))
-                : _buildCardFront(card, key: const ValueKey('front')),
+                ? _buildAnswerCard(card, key: const ValueKey('answer'))
+                : _buildQuestionCardInner(card, key: const ValueKey('question')),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCardFront(Flashcard card, {Key? key}) {
+  Widget _buildQuestionCardInner(Flashcard card, {Key? key}) {
     return Container(
       key: key,
       child: SingleChildScrollView(
@@ -459,43 +537,70 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          // Type indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: card.typeColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            // Type and difficulty indicator
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(card.typeIcon, size: 16, color: card.typeColor),
-                const SizedBox(width: 4),
-                Text(
-                  card.typeText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: card.typeColor,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: card.typeColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(card.typeIcon, size: 16, color: card.typeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        card.typeText,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: card.typeColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: card.difficultyColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star, size: 16, color: card.difficultyColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        card.difficultyText,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: card.difficultyColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 30),
-          // Question
-          Text(
-            card.front,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2C2C2C),
+            const SizedBox(height: 30),
+            // Question
+            Text(
+              card.front,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2C2C2C),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 30),
-          // Content based on type
-          _buildQuestionContent(card),
+            const SizedBox(height: 30),
+            // Content based on type
+            _buildQuestionContent(card),
           ],
         ),
       ),
@@ -694,7 +799,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
     );
   }
 
-  Widget _buildCardBack(Flashcard card, {Key? key}) {
+  Widget _buildAnswerCard(Flashcard card, {Key? key}) {
     return Container(
       key: key,
       child: SingleChildScrollView(
@@ -702,93 +807,82 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          // Result indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: _isAnswerCorrect 
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _isAnswerCorrect ? Colors.green : Colors.red,
-                width: 1,
+            // Result indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: _isAnswerCorrect 
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _isAnswerCorrect ? Colors.green : Colors.red,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isAnswerCorrect ? Icons.check_circle : Icons.cancel,
+                    color: _isAnswerCorrect ? Colors.green : Colors.red,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isAnswerCorrect ? 'Correct!' : 'Incorrect',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _isAnswerCorrect ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _isAnswerCorrect ? Icons.check_circle : Icons.cancel,
-                  color: _isAnswerCorrect ? Colors.green : Colors.red,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _isAnswerCorrect ? 'Correct!' : 'Incorrect',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: _isAnswerCorrect ? Colors.green : Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
-          
-          // Correct answer
-          Text(
-            'Correct Answer:',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF6C6C6C),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _getCorrectAnswerText(card),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2C2C2C),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          // Show user's answer if different
-          if (!_isAnswerCorrect) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
+            
+            // Correct answer
             Text(
-              'Your Answer:',
+              'Correct Answer:',
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Color(0xFF6C6C6C),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
-              _getUserAnswerText(card),
+              _getCorrectAnswerText(card),
               style: const TextStyle(
-                fontSize: 16,
-                color: Colors.red,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2C2C2C),
               ),
               textAlign: TextAlign.center,
             ),
-          ],
-          
-          const SizedBox(height: 30),
-          // How well did you know this?
-          const Text(
-            'How well did you know this?',
-            style: TextStyle(
-              fontSize: 16,
-              color: Color(0xFF6C6C6C),
-            ),
-            textAlign: TextAlign.center,
-          ),
+            
+            // Show user's answer if different
+            if (!_isAnswerCorrect) ...[
+              const SizedBox(height: 20),
+              Text(
+                'Your Answer:',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF6C6C6C),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _getUserAnswerText(card),
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.red,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
         ),
       ),
@@ -834,114 +928,100 @@ class _StudyModeScreenState extends State<StudyModeScreen>
     }
   }
 
-  Widget _buildRatingButtons() {
+  Widget _buildActionButtons() {
     if (!_isAnswerRevealed) return const SizedBox.shrink();
     
+    final isLastQuestion = _currentQuestionIndex + 1 >= _flashcards.length;
+    
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          if (_isAnswerCorrect) ...[
-            // Correct answer - show confidence levels
-            Row(
-              children: [
-                Expanded(
-                  child: _buildRatingButton(
-                    'Hard',
-                    CardRating.hard,
-                    Colors.orange,
-                    Icons.trending_down,
-                    'Correct but difficult',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildRatingButton(
-                    'Good',
-                    CardRating.good,
-                    Colors.green,
-                    Icons.check_circle,
-                    'Correct and confident',
-                  ),
-                ),
-              ],
+          // Progress indicator
+          Container(
+            width: double.infinity,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(3),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildRatingButton(
-                    'Easy',
-                    CardRating.easy,
-                    Colors.blue,
-                    Icons.trending_up,
-                    'Correct and easy',
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: (_currentQuestionIndex + 1) / _flashcards.length,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryPurple,
+                      AppTheme.darkPurple,
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(), // Empty space for alignment
-                ),
-              ],
+              ),
             ),
-          ] else ...[
-            // Incorrect answer - show again option
-            Row(
-              children: [
-                Expanded(
-                  child: _buildRatingButton(
-                    'Again',
-                    CardRating.again,
-                    Colors.red,
-                    Icons.refresh,
-                    'Study this again',
+          ),
+          const SizedBox(height: 16),
+          // Question counter
+          Text(
+            'Question ${_currentQuestionIndex + 1} of ${_flashcards.length}',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Next Question button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _submitAnswer,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isLastQuestion 
+                    ? const Color(0xFF4CAF50) 
+                    : AppTheme.primaryPurple,
+                foregroundColor: Colors.white,
+                elevation: 8,
+                shadowColor: isLastQuestion 
+                    ? const Color(0xFF4CAF50).withOpacity(0.4)
+                    : AppTheme.primaryPurple.withOpacity(0.4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isLastQuestion) ...[
+                    const Icon(
+                      Icons.check_circle_outline,
+                      size: 24,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 12),
+                  ] else ...[
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Text(
+                    isLastQuestion ? 'Finish Challenge' : 'Next Question',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(), // Empty space for alignment
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRatingButton(String label, CardRating rating, Color color, IconData icon, String description) {
-    return GestureDetector(
-      onTap: () => _rateCard(rating),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: TextStyle(
-                color: color.withOpacity(0.8),
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -964,7 +1044,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: const Icon(
-                  Icons.check_circle,
+                  Icons.emoji_events,
                   color: Colors.green,
                   size: 50,
                 ),
@@ -973,7 +1053,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
               
               // Completion message
               const Text(
-                'Study Session Complete!',
+                'Challenge Complete!',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -983,16 +1063,28 @@ class _StudyModeScreenState extends State<StudyModeScreen>
               ),
               const SizedBox(height: 20),
               
-              // Statistics
-              if (_session != null) ...[
-                _buildStatCard('Cards Studied', '${_session!.completedCards}'),
-                const SizedBox(height: 12),
-                _buildStatCard('Accuracy', '${_session!.accuracy.toStringAsFixed(1)}%'),
-                const SizedBox(height: 12),
-                _buildStatCard('Score', '${_session!.score.toInt()}'),
-                const SizedBox(height: 12),
-                _buildStatCard('Best Streak', '${_session!.maxStreak}'),
-              ],
+              // Statistics Cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildColoredStatCard(
+                      '$_sessionPoints',
+                      'Points',
+                      const Color(0xFF2196F3), // Blue
+                      Icons.stars,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _buildColoredStatCard(
+                      '$_correctAnswers/${_flashcards.length}',
+                      'Correct',
+                      const Color(0xFF4CAF50), // Green
+                      Icons.check_circle,
+                    ),
+                  ),
+                ],
+              ),
               
               const SizedBox(height: 40),
               
@@ -1002,7 +1094,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Back to Deck'),
+                      child: const Text('Back to Course'),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -1010,9 +1102,9 @@ class _StudyModeScreenState extends State<StudyModeScreen>
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        // TODO: Start new study session
+                        // TODO: Start new challenge
                       },
-                      child: const Text('Study Again'),
+                      child: const Text('Try Again'),
                     ),
                   ),
                 ],
@@ -1020,6 +1112,56 @@ class _StudyModeScreenState extends State<StudyModeScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildColoredStatCard(String value, String label, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 32,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: color.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -1061,70 +1203,16 @@ class _StudyModeScreenState extends State<StudyModeScreen>
     );
   }
 
-  void _showNoCardsDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('No Cards Available'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message),
-            const SizedBox(height: 16),
-            const Text(
-              'Try these alternatives:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text('• Review All - Study all cards in this deck'),
-            const Text('• Random - Study cards in random order'),
-            const SizedBox(height: 16),
-            const Text(
-              'Cards become "due" after you study them and they need review based on spaced repetition.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            child: const Text('Go Back'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-              // Navigate to review all mode
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => StudyModeScreen(
-                    deckId: widget.deckId,
-                    mode: StudyMode.review,
-                  ),
-                ),
-              );
-            },
-            child: const Text('Review All'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showExitConfirmation() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Exit Study Session'),
+        title: const Text('Exit Challenge'),
         content: const Text('Are you sure you want to exit? Your progress will be saved.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Continue Studying'),
+            child: const Text('Continue'),
           ),
           TextButton(
             onPressed: () {

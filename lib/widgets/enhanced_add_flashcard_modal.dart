@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../services/flashcard_service.dart';
+import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 
 class EnhancedAddFlashcardModal extends StatefulWidget {
@@ -24,10 +25,12 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
   final _identifierController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final FlashcardService _flashcardService = FlashcardService();
+  final PreferencesService _preferencesService = PreferencesService();
   
   bool _isLoading = false;
   int _selectedDifficulty = 3;
   FlashcardType _selectedType = FlashcardType.basic;
+  StudyPreferences? _studyPreferences;
   
   // For multiple choice
   final List<TextEditingController> _optionControllers = [];
@@ -41,6 +44,32 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
     super.initState();
     _addOptionController();
     _addEnumerationController();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      _studyPreferences = await _preferencesService.getStudyPreferences();
+      if (_studyPreferences != null) {
+        // Set default difficulty based on preferences
+        switch (_studyPreferences!.defaultDifficulty) {
+          case 'Easy':
+            _selectedDifficulty = 1;
+            break;
+          case 'Medium':
+            _selectedDifficulty = 3;
+            break;
+          case 'Hard':
+            _selectedDifficulty = 5;
+            break;
+          default:
+            _selectedDifficulty = 3;
+        }
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error loading study preferences: $e');
+    }
   }
 
   @override
@@ -95,6 +124,15 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
 
   Future<void> _addFlashcard() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Show confirmation dialog
+    final confirmed = await _showConfirmationDialog(
+      title: 'Add Flashcard',
+      content: 'Are you sure you want to add this flashcard?',
+      confirmText: 'Add Flashcard',
+    );
+
+    if (!confirmed) return;
 
     setState(() => _isLoading = true);
 
@@ -183,6 +221,56 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<bool> _showConfirmationDialog({
+    required String title,
+    required String content,
+    required String confirmText,
+  }) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        content: Text(
+          content,
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(confirmText),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 
   @override
