@@ -33,7 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh rank and points when screen becomes visible
     _controller.refreshRankAndPoints();
   }
 
@@ -51,276 +50,249 @@ class _HomeScreenState extends State<HomeScreen> {
       listenable: accessibilityService,
       builder: (context, child) {
         return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final user = _controller.currentUser;
-          if (user == null) {
-            return const Center(child: Text('No user logged in'));
-          }
-          
-          return SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                // Top Header with Gradient Background
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.primaryPurple.withOpacity(0.05),
-                        AppTheme.lightPurple.withOpacity(0.1),
-                      ],
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            AccessibleText(
-                              'Dashboard',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimary,
-                                shadows: [
-                                  Shadow(
-                                    color: AppTheme.primaryPurple.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final user = _controller.currentUser;
+              if (user == null) {
+                return const Center(child: Text('No user logged in'));
+              }
+              
+              return SafeArea(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Top Header
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppTheme.primaryPurple.withOpacity(0.05),
+                              AppTheme.lightPurple.withOpacity(0.1),
+                            ],
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AccessibleText(
+                                    'Dashboard',
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                    semanticLabel: 'Dashboard title',
+                                  ),
+                                  const SizedBox(height: 4),
+                                  AccessibleText(
+                                    'Welcome back!',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppTheme.textSecondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    semanticLabel: 'Welcome message',
                                   ),
                                 ],
                               ),
-                              semanticLabel: 'Dashboard title',
-                            ),
-                            const SizedBox(height: 4),
-                            AccessibleText(
-                              'Welcome back!',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              semanticLabel: 'Welcome message',
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => _navigateToSettings(),
-                              child: Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryPurple,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Stats Cards with Enhanced Design
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildStatsCards(),
-                ),
-                
-                const SizedBox(height: 32),
-                
-                // Courses Section Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Courses',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _controller.hasSearchResults 
-                                    ? '${_controller.coursesCount} results for "${_controller.searchQuery}"'
-                                    : 'Your learning journey',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: AppTheme.textSecondary,
-                                  fontWeight: FontWeight.w500,
+                              GestureDetector(
+                                onTap: () => _navigateToSettings(),
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPurple,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      // Search Bar
-                      SearchBarWidget(
-                        initialValue: _controller.searchQuery,
-                        onChanged: _controller.searchCourses,
-                        onClear: _controller.clearSearch,
-                        hintText: 'Search by title, description, or instructor...',
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Stats Cards
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildStatsCards(),
                       ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Courses Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Courses',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _controller.hasSearchResults 
+                                          ? '${_controller.coursesCount} results for "${_controller.searchQuery}"'
+                                          : 'Your learning journey',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppTheme.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SearchBarWidget(
+                              initialValue: _controller.searchQuery,
+                              onChanged: _controller.searchCourses,
+                              onClear: _controller.clearSearch,
+                              hintText: 'Search by title, description, or instructor...',
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Progress Dashboard
+                      const ProgressDashboard(),
+                      
+                      // Error Display
+                      if (_controller.error != null)
+                        Container(
+                          margin: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            'Error: ${_controller.error}',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      
+                      // Courses List
+                      _controller.isLoading
+                          ? const Padding(
+                              padding: EdgeInsets.all(50),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          : _controller.courses.isEmpty
+                              ? _buildEmptyState()
+                              : _buildCoursesList(_controller.courses),
+                      
+                      const SizedBox(height: 100), // Space for bottom bar
                     ],
                   ),
                 ),
-                
-                const SizedBox(height: 20),
-                
-                // Progress Dashboard
-                const ProgressDashboard(),
-                
-                // Courses List
+              );
+            },
+          ),
+          bottomNavigationBar: Container(
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFFF8F9FA),
+                  const Color(0xFFF5F5F5),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(28),
+                topRight: Radius.circular(28),
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        const Color(0xFFE0E0E0),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 60,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD0D0D0),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
                 Expanded(
-                  child: _controller.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _controller.courses.isEmpty
-                          ? _buildEmptyState()
-                          : _buildCoursesList(_controller.courses),
+                  child: Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.primaryPurple,
+                            AppTheme.darkPurple,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 4,
+                        ),
+                      ),
+                      child: GestureDetector(
+                        onTap: _showAddCourseModal,
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          );
-        },
-      ),
-      bottomNavigationBar: Container(
-        height: 120,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFFF8F9FA),
-              const Color(0xFFF5F5F5),
-            ],
-          ),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 40,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Top border line with gradient
-            Container(
-              height: 2,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    const Color(0xFFE0E0E0),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-            // Decorative rounded rectangle
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 60,
-              height: 8,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD0D0D0),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            // Floating Action Button inside footer
-            Expanded(
-              child: Center(
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.primaryPurple,
-                        AppTheme.darkPurple,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 4,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryPurple.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                      BoxShadow(
-                        color: AppTheme.primaryPurple.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: GestureDetector(
-                    onTap: _showAddCourseModal,
-                    child: const Icon(
-                      Icons.add,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+        );
       },
     );
   }
@@ -330,32 +302,28 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentRank = _controller.currentRank;
     final totalPoints = _controller.totalPoints;
     
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 200, // Fixed height for both cards
-                child: _buildStatCard(
-                  '$studiedCards',
-                  'Studied Cards',
-                  AppTheme.primaryPurple,
-                  Icons.school,
-                ),
-              ),
+        Expanded(
+          child: SizedBox(
+            height: 200,
+            child: _buildStatCard(
+              '$studiedCards',
+              'Studied Cards',
+              AppTheme.primaryPurple,
+              Icons.school,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: SizedBox(
-                height: 200, // Same fixed height
-                child: _buildPointsAndRankCard(
-                  totalPoints,
-                  currentRank?.name ?? 'C-Rank',
-                ),
-              ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: SizedBox(
+            height: 200,
+            child: _buildPointsAndRankCard(
+              totalPoints,
+              currentRank?.name ?? 'C-Rank',
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -411,13 +379,6 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 36,
               fontWeight: FontWeight.bold,
               color: AppTheme.textPrimary,
-              shadows: [
-                Shadow(
-                  color: color.withOpacity(0.2),
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -541,7 +502,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEmptyState() {
     if (_controller.hasSearchResults) {
-      // No search results
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -587,7 +547,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     } else {
-      // No courses at all
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -622,7 +581,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCoursesList(List<Course> courses) {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       itemCount: courses.length,
       itemBuilder: (context, index) {
         final course = courses[index];
@@ -643,7 +604,6 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => AddCourseModal(
         onCourseAdded: () {
-          // Refresh the course list after adding a new course
           _controller.loadCourses();
         },
       ),
@@ -656,7 +616,6 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => CourseDetailsScreen(
           course: course,
           onDataChanged: () {
-            // Refresh dashboard when data changes
             _controller.refreshRankAndPoints();
           },
         ),
@@ -672,9 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => EditCourseModal(
         course: course,
         dashboardController: _controller,
-        onCourseUpdated: () {
-          // Refresh handled automatically by DashboardController.updateCourse()
-        },
+        onCourseUpdated: () {},
       ),
     );
   }
@@ -761,15 +718,5 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => const LeaderboardScreen(),
       ),
     );
-  }
-
-  Future<void> _signOut() async {
-    await _controller.signOut();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    }
   }
 }
