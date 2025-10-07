@@ -14,19 +14,6 @@ class SecurityService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Check if user has 2FA enabled
-  Future<bool> isTwoFactorEnabled() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return false;
-
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      return doc.data()?['twoFactorEnabled'] ?? false;
-    } catch (e) {
-      print('Error checking 2FA status: $e');
-      return false;
-    }
-  }
 
   // Check if user has login notifications enabled
   Future<bool> hasLoginNotificationsEnabled() async {
@@ -61,14 +48,11 @@ class SecurityService {
     try {
       int score = 0;
       
-      // Check 2FA
-      if (await isTwoFactorEnabled()) score += 40;
-      
       // Check login notifications
-      if (await hasLoginNotificationsEnabled()) score += 20;
+      if (await hasLoginNotificationsEnabled()) score += 40;
       
       // Check suspicious activity alerts
-      if (await hasSuspiciousActivityAlertsEnabled()) score += 20;
+      if (await hasSuspiciousActivityAlertsEnabled()) score += 40;
       
       // Check if user has a strong password (this would need to be implemented)
       // For now, we'll assume all users have strong passwords
@@ -204,75 +188,6 @@ class SecurityService {
     }
   }
 
-  // Verify 2FA code (placeholder implementation)
-  Future<bool> verifyTwoFactorCode(String code) async {
-    try {
-      // In a real implementation, this would verify the code with the authenticator app
-      // For now, we'll simulate verification
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Simple validation - in real app, this would be much more sophisticated
-      return code.length == 6 && code.contains(RegExp(r'^\d+$'));
-    } catch (e) {
-      print('Error verifying 2FA code: $e');
-      return false;
-    }
-  }
-
-  // Generate backup codes
-  List<String> generateBackupCodes({int count = 10}) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return List.generate(count, (index) {
-      return List.generate(8, (i) => 
-        chars[(DateTime.now().millisecondsSinceEpoch + index + i) % chars.length]
-      ).join();
-    });
-  }
-
-  // Save backup codes
-  Future<void> saveBackupCodes(List<String> codes) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
-
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('security')
-          .doc('backupCodes')
-          .set({
-        'codes': codes,
-        'createdAt': FieldValue.serverTimestamp(),
-        'used': List.filled(codes.length, false),
-      });
-    } catch (e) {
-      print('Error saving backup codes: $e');
-    }
-  }
-
-  // Get backup codes
-  Future<List<String>?> getBackupCodes() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return null;
-
-      final doc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('security')
-          .doc('backupCodes')
-          .get();
-
-      if (doc.exists) {
-        final data = doc.data()!;
-        return List<String>.from(data['codes'] ?? []);
-      }
-      return null;
-    } catch (e) {
-      print('Error getting backup codes: $e');
-      return null;
-    }
-  }
 }
 
 class SecurityAlert {

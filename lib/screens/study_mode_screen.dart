@@ -5,6 +5,7 @@ import '../services/study_service.dart';
 import '../services/flashcard_service.dart';
 import '../services/preferences_service.dart';
 import '../services/progress_tracking_service.dart';
+import '../services/adaptive_difficulty_service.dart';
 import '../theme/app_theme.dart';
 
 class StudyModeScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
   final FlashcardService _flashcardService = FlashcardService();
   final PreferencesService _preferencesService = PreferencesService();
   final ProgressTrackingService _progressTrackingService = ProgressTrackingService();
+  final AdaptiveDifficultyService _adaptiveDifficultyService = AdaptiveDifficultyService();
   
   StudySession? _session;
   List<Flashcard> _flashcards = [];

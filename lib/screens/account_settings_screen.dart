@@ -7,8 +7,6 @@ import 'account_security_screen.dart';
 import 'study_preferences_screen.dart';
 import 'progress_settings_screen.dart';
 import 'notification_settings_screen.dart';
-import 'data_export_screen.dart';
-import 'privacy_settings_screen.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
@@ -112,19 +110,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               onTap: _showNotificationSettings,
             ),
             
-            _buildAccountItem(
-              icon: Icons.download_outlined,
-              title: 'Data Export',
-              subtitle: 'Export study progress and flashcards',
-              onTap: _exportData,
-            ),
-            
-            _buildAccountItem(
-              icon: Icons.privacy_tip_outlined,
-              title: 'Privacy Settings',
-              subtitle: 'Control what data is shared',
-              onTap: _showPrivacySettings,
-            ),
           ],
         ),
       ),
@@ -454,19 +439,4 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     );
   }
 
-  void _exportData() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const DataExportScreen(),
-      ),
-    );
-  }
-
-  void _showPrivacySettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const PrivacySettingsScreen(),
-      ),
-    );
-  }
 }

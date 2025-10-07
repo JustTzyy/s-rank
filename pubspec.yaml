@@ -48,6 +48,10 @@ dependencies:
   pdf: ^3.10.7
   printing: ^5.12.0
   
+  # Notification dependencies
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
+  
   # Package info
   package_info_plus: ^8.0.0
   

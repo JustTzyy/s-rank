@@ -61,8 +61,9 @@ class _HomeScreenState extends State<HomeScreen> {
           }
           
           return SafeArea(
-            child: Column(
-              children: [
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
                 // Top Header with Gradient Background
                 Container(
                   decoration: BoxDecoration(
@@ -215,6 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
+          ),
           );
         },
       ),
@@ -511,13 +513,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.white,
                     size: 16,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    rank,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      rank,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),

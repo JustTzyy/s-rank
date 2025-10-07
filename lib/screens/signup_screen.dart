@@ -3,7 +3,6 @@ import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'profile_setup_screen.dart';
 import 'terms_screen.dart';
-import 'privacy_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -270,7 +269,11 @@ class _SignupScreenState extends State<SignupScreen> {
                                 onTap: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (context) => const PrivacyScreen(),
+                                      builder: (context) => const Scaffold(
+                                        body: Center(
+                                          child: Text('Privacy Policy coming soon!'),
+                                        ),
+                                      ),
                                     ),
                                   );
                                 },

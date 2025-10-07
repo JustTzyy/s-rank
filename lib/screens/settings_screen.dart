@@ -6,8 +6,7 @@ import 'edit_profile_screen.dart';
 import 'account_settings_screen.dart';
 import 'archive_screen.dart';
 import 'accessibility_settings_screen.dart';
-import 'conditions_settings_screen.dart';
-import 'others_settings_screen.dart';
+import 'system_guide_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -203,30 +202,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         
         _buildSettingsItem(
-          icon: Icons.health_and_safety,
-          title: 'Conditions',
-          subtitle: 'Set your learning conditions',
+          icon: Icons.help_outline,
+          title: 'System Guide',
+          subtitle: 'Learn how to use the system effectively',
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => const ConditionsSettingsScreen(),
+                builder: (context) => const SystemGuideScreen(),
               ),
             );
           },
         ),
         
-        _buildSettingsItem(
-          icon: Icons.more_horiz,
-          title: 'Others',
-          subtitle: 'Additional settings and preferences',
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const OthersSettingsScreen(),
-              ),
-            );
-          },
-        ),
       ],
     );
   }

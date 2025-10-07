@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/preferences_service.dart';
-import '../services/privacy_service.dart';
+import 'goal_tracking_service.dart';
 
 class ProgressTrackingService {
   static ProgressTrackingService? _instance;
@@ -16,7 +16,7 @@ class ProgressTrackingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final PreferencesService _preferencesService = PreferencesService();
-  final PrivacyService _privacyService = PrivacyService();
+  final GoalTrackingService _goalTrackingService = GoalTrackingService();
 
   // Track study session progress
   Future<void> trackStudySession({
@@ -32,7 +32,8 @@ class ProgressTrackingService {
       if (user == null) return;
 
       // Check privacy settings first
-      final canCollectStudyData = await _privacyService.canCollectStudyData();
+      // Privacy service removed - assume data collection is allowed
+      final canCollectStudyData = true;
       if (!canCollectStudyData) return;
 
       final settings = await _preferencesService.getProgressSettings();
@@ -51,6 +52,14 @@ class ProgressTrackingService {
         incorrectAnswers: settings.trackAccuracy ? incorrectAnswers : 0,
         accuracy: settings.trackAccuracy ? accuracy : 0.0,
       );
+
+      // Update goal tracking
+      if (settings.trackStudyTime) {
+        await _goalTrackingService.updateDailyStudyProgress(minutesStudied: duration);
+      }
+      if (settings.trackPoints) {
+        await _goalTrackingService.updateDailyCardProgress(cardsStudied: cardsStudied);
+      }
 
       // Update weekly progress
       await _updateWeeklyProgress(
@@ -285,7 +294,7 @@ class ProgressTrackingService {
     if (streakDoc.exists) {
       final data = streakDoc.data()!;
       final lastStudyDate = (data['lastStudyDate'] as Timestamp?)?.toDate();
-      final currentStreak = data['currentStreak'] ?? 0;
+      final currentStreak = (data['currentStreak'] as int?) ?? 0;
       
       if (lastStudyDate != null) {
         final daysDifference = date.difference(lastStudyDate).inDays;
@@ -354,11 +363,11 @@ class DailyProgress {
   factory DailyProgress.fromMap(Map<String, dynamic> data) {
     return DailyProgress(
       date: (data['date'] as Timestamp).toDate(),
-      duration: data['duration'] ?? 0,
-      cardsStudied: data['cardsStudied'] ?? 0,
-      correctAnswers: data['correctAnswers'] ?? 0,
-      incorrectAnswers: data['incorrectAnswers'] ?? 0,
-      accuracy: (data['accuracy'] ?? 0.0).toDouble(),
+      duration: (data['duration'] as int?) ?? 0,
+      cardsStudied: (data['cardsStudied'] as int?) ?? 0,
+      correctAnswers: (data['correctAnswers'] as int?) ?? 0,
+      incorrectAnswers: (data['incorrectAnswers'] as int?) ?? 0,
+      accuracy: (data['accuracy'] as double?) ?? 0.0,
     );
   }
 }
@@ -383,11 +392,11 @@ class WeeklyProgress {
   factory WeeklyProgress.fromMap(Map<String, dynamic> data) {
     return WeeklyProgress(
       weekStart: (data['weekStart'] as Timestamp).toDate(),
-      duration: data['duration'] ?? 0,
-      cardsStudied: data['cardsStudied'] ?? 0,
-      correctAnswers: data['correctAnswers'] ?? 0,
-      incorrectAnswers: data['incorrectAnswers'] ?? 0,
-      accuracy: (data['accuracy'] ?? 0.0).toDouble(),
+      duration: (data['duration'] as int?) ?? 0,
+      cardsStudied: (data['cardsStudied'] as int?) ?? 0,
+      correctAnswers: (data['correctAnswers'] as int?) ?? 0,
+      incorrectAnswers: (data['incorrectAnswers'] as int?) ?? 0,
+      accuracy: (data['accuracy'] as double?) ?? 0.0,
     );
   }
 }

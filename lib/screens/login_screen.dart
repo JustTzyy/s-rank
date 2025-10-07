@@ -4,7 +4,6 @@ import '../theme/app_theme.dart';
 import 'signup_screen.dart';
 import 'profile_setup_screen.dart';
 import 'terms_screen.dart';
-import 'privacy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,20 +46,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (userCredential != null) {
-        // Track successful login
-        await _authService.trackLoginAttempt(
-          isSuccessful: true,
-          deviceInfo: _authService.getDeviceInfo(),
-          userAgent: _authService.getUserAgent(),
-        );
-        
-        // Create active session
-        final sessionId = _authService.generateSessionId();
-        await _authService.createOrUpdateActiveSession(
-          sessionId: sessionId,
-          deviceInfo: _authService.getDeviceInfo(),
-          userAgent: _authService.getUserAgent(),
-        );
         
         // Check if user has completed profile setup
         final profile = await _authService.getUserProfile(userCredential.user!.uid);
@@ -78,13 +63,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      // Track failed login
-      await _authService.trackLoginAttempt(
-        isSuccessful: false,
-        failureReason: e.toString(),
-        deviceInfo: _authService.getDeviceInfo(),
-        userAgent: _authService.getUserAgent(),
-      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -105,20 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final userCredential = await _authService.signInWithGoogle();
       
       if (userCredential != null) {
-        // Track successful login
-        await _authService.trackLoginAttempt(
-          isSuccessful: true,
-          deviceInfo: _authService.getDeviceInfo(),
-          userAgent: _authService.getUserAgent(),
-        );
-        
-        // Create active session
-        final sessionId = _authService.generateSessionId();
-        await _authService.createOrUpdateActiveSession(
-          sessionId: sessionId,
-          deviceInfo: _authService.getDeviceInfo(),
-          userAgent: _authService.getUserAgent(),
-        );
         
         // Check if user has completed profile setup
         final profile = await _authService.getUserProfile(userCredential.user!.uid);
@@ -136,13 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      // Track failed login
-      await _authService.trackLoginAttempt(
-        isSuccessful: false,
-        failureReason: e.toString(),
-        deviceInfo: _authService.getDeviceInfo(),
-        userAgent: _authService.getUserAgent(),
-      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -161,13 +118,20 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppTheme.lightPurpleBackground,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         MediaQuery.of(context).padding.bottom - 48,
+            ),
+            child: IntrinsicHeight(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                 const SizedBox(height: 40),
                 Text(
                   'LOG-IN',
@@ -309,7 +273,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onTap: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (context) => const PrivacyScreen(),
+                                      builder: (context) => const Scaffold(
+                                        body: Center(
+                                          child: Text('Privacy Policy coming soon!'),
+                                        ),
+                                      ),
                                     ),
                                   );
                                 },
@@ -416,6 +384,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
+    ), ) );
   }
 }

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/preferences_service.dart';
+import '../services/notification_service.dart';
 
 class StudyPreferencesScreen extends StatefulWidget {
   const StudyPreferencesScreen({super.key});
@@ -14,6 +15,7 @@ class StudyPreferencesScreen extends StatefulWidget {
 class _StudyPreferencesScreenState extends State<StudyPreferencesScreen> {
   final AuthService _authService = AuthService();
   final PreferencesService _preferencesService = PreferencesService();
+  final NotificationService _notificationService = NotificationService();
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -100,6 +102,13 @@ class _StudyPreferencesScreenState extends State<StudyPreferencesScreen> {
       );
       
       await _preferencesService.saveStudyPreferences(preferences);
+      
+      // Schedule notifications if reminders are enabled
+      if (_studyRemindersEnabled) {
+        await _notificationService.scheduleStudyReminders();
+      } else {
+        await _notificationService.cancelStudyReminders();
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

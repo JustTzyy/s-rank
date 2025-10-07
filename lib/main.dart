@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
-import 'services/session_manager.dart';
 import 'services/accessibility_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
@@ -78,48 +77,9 @@ class AuthWrapper extends StatefulWidget {
   State<AuthWrapper> createState() => _AuthWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
+class _AuthWrapperState extends State<AuthWrapper> {
   final AuthService _authService = AuthService();
-  final SessionManager _sessionManager = SessionManager();
-  bool _sessionInitialized = false;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _sessionManager.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    
-    switch (state) {
-      case AppLifecycleState.resumed:
-        _sessionManager.resume();
-        break;
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.detached:
-        _sessionManager.stop();
-        break;
-      case AppLifecycleState.hidden:
-        break;
-    }
-  }
-
-  void _initializeSessionIfNeeded() {
-    if (!_sessionInitialized) {
-      _sessionManager.initialize();
-      _sessionInitialized = true;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -188,13 +148,8 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
         
         final user = snapshot.data;
         if (user == null) {
-          _sessionManager.stop();
-          _sessionInitialized = false;
           return const LoginScreen();
         }
-        
-        // User is logged in, initialize session manager
-        _initializeSessionIfNeeded();
         
         // Check if they have completed profile setup
         return FutureBuilder(

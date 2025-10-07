@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/security_service.dart';
 import 'login_history_screen.dart';
-import 'active_sessions_screen.dart';
 
 class AccountSecurityScreen extends StatefulWidget {
   const AccountSecurityScreen({super.key});
@@ -17,10 +15,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   final AuthService _authService = AuthService();
   final SecurityService _securityService = SecurityService();
   bool _isLoading = false;
-  bool _twoFactorEnabled = false;
   bool _loginNotifications = true;
   bool _suspiciousActivityAlerts = true;
-  String _backupCode = '';
 
   @override
   void initState() {
@@ -33,12 +29,10 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     
     try {
       // Load security settings using security service
-      final twoFactorEnabled = await _securityService.isTwoFactorEnabled();
       final loginNotifications = await _securityService.hasLoginNotificationsEnabled();
       final suspiciousActivityAlerts = await _securityService.hasSuspiciousActivityAlertsEnabled();
       
       setState(() {
-        _twoFactorEnabled = twoFactorEnabled;
         _loginNotifications = loginNotifications;
         _suspiciousActivityAlerts = suspiciousActivityAlerts;
       });
@@ -84,36 +78,6 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                   _buildSecurityStatusCard(),
                   const SizedBox(height: 24),
                   
-                  // Two-Factor Authentication
-                  _buildSectionTitle('Two-Factor Authentication'),
-                  const SizedBox(height: 16),
-                  
-                  _buildSecurityItem(
-                    icon: Icons.security,
-                    title: 'Two-Factor Authentication',
-                    subtitle: _twoFactorEnabled 
-                        ? 'Enabled - Your account is protected' 
-                        : 'Add an extra layer of security',
-                    trailing: Switch(
-                      value: _twoFactorEnabled,
-                      onChanged: _toggleTwoFactor,
-                      activeColor: AppTheme.primaryPurple,
-                    ),
-                    onTap: _showTwoFactorDialog,
-                  ),
-                  
-                  if (_twoFactorEnabled) ...[
-                    const SizedBox(height: 12),
-                    _buildSecurityItem(
-                      icon: Icons.backup,
-                      title: 'Backup Codes',
-                      subtitle: 'Generate backup codes for account recovery',
-                      onTap: _generateBackupCodes,
-                    ),
-                  ],
-                  
-                  const SizedBox(height: 24),
-                  
                   // Security Notifications
                   _buildSectionTitle('Security Notifications'),
                   const SizedBox(height: 16),
@@ -132,7 +96,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                   _buildSecurityItem(
                     icon: Icons.warning,
                     title: 'Suspicious Activity Alerts',
-                    subtitle: 'Get alerts for unusual account activity',
+                    subtitle: 'Get alerts for unusual login attempts',
                     trailing: Switch(
                       value: _suspiciousActivityAlerts,
                       onChanged: (value) => _updateSecuritySetting('suspiciousActivityAlerts', value),
@@ -147,21 +111,35 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                   const SizedBox(height: 16),
                   
                   _buildSecurityItem(
-                    icon: Icons.devices,
-                    title: 'Active Sessions',
-                    subtitle: 'Manage devices logged into your account',
-                    onTap: _showActiveSessions,
-                  ),
-                  
-                  _buildSecurityItem(
                     icon: Icons.history,
                     title: 'Login History',
-                    subtitle: 'View recent login attempts and locations',
+                    subtitle: 'View recent login attempts and sessions',
                     onTap: _showLoginHistory,
                   ),
                   
                   _buildSecurityItem(
                     icon: Icons.lock_reset,
+                    title: 'Change Password',
+                    subtitle: 'Update your account password',
+                    onTap: _changePassword,
+                  ),
+                  
+                  _buildSecurityItem(
+                    icon: Icons.delete_forever,
+                    title: 'Delete Account',
+                    subtitle: 'Permanently delete your account and all data',
+                    onTap: _deleteAccount,
+                    isDestructive: true,
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Reset Security Settings
+                  _buildSectionTitle('Reset Settings'),
+                  const SizedBox(height: 16),
+                  
+                  _buildSecurityItem(
+                    icon: Icons.restore,
                     title: 'Reset Security Settings',
                     subtitle: 'Reset all security settings to default',
                     onTap: _resetSecuritySettings,
@@ -175,79 +153,85 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
   Widget _buildSecurityStatusCard() {
     return FutureBuilder<int>(
-      future: _calculateSecurityScore(),
+      future: _securityService.getSecurityScore(),
       builder: (context, snapshot) {
-        final securityScore = snapshot.data ?? 0;
-        final statusColor = securityScore >= 80 
-            ? Colors.green 
-            : securityScore >= 60 
-                ? Colors.orange 
-                : Colors.red;
-    
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            statusColor.withOpacity(0.1),
-            statusColor.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: statusColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
+        final score = snapshot.data ?? 0;
+        final status = _getSecurityStatus(score);
+        final color = _getSecurityColor(score);
+        
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withOpacity(0.1),
+                color.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Icon(
-                  securityScore >= 80 ? Icons.security : Icons.warning,
-                  color: statusColor,
-                  size: 24,
+              Row(
+                children: [
+                  Icon(
+                    Icons.security,
+                    color: color,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Security Status',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                status,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textSecondary,
+                  height: 1.4,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Security Score: $securityScore%',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: score / 100,
+                      backgroundColor: color.withOpacity(0.2),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                      minHeight: 8,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _getSecurityStatusText(securityScore),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary,
-                      ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '$score%',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: color,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-    );
+        );
       },
     );
   }
@@ -324,312 +308,16 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     );
   }
 
-  Future<int> _calculateSecurityScore() async {
-    return await _securityService.getSecurityScore();
+  Color _getSecurityColor(int score) {
+    if (score >= 80) return Colors.green;
+    if (score >= 60) return Colors.orange;
+    return Colors.red;
   }
 
-  String _getSecurityStatusText(int score) {
+  String _getSecurityStatus(int score) {
     if (score >= 80) return 'Excellent security! Your account is well protected.';
     if (score >= 60) return 'Good security. Consider enabling more features.';
     return 'Weak security. Please enable additional security features.';
-  }
-
-  void _toggleTwoFactor(bool value) {
-    if (value) {
-      _showTwoFactorSetupDialog();
-    } else {
-      _showDisableTwoFactorDialog();
-    }
-  }
-
-  void _showTwoFactorDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Two-Factor Authentication',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        content: Text(
-          _twoFactorEnabled 
-              ? 'Two-factor authentication is currently enabled. This adds an extra layer of security to your account.'
-              : 'Two-factor authentication adds an extra layer of security by requiring a second form of verification when logging in.',
-          style: const TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          if (!_twoFactorEnabled)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _showTwoFactorSetupDialog();
-              },
-              child: const Text('Enable'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  void _showTwoFactorSetupDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Enable Two-Factor Authentication',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        content: const Text(
-          'Two-factor authentication will be enabled for your account. You will need to enter a verification code from your authenticator app when logging in.',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _enableTwoFactor();
-            },
-            child: const Text('Enable'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDisableTwoFactorDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Disable Two-Factor Authentication',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
-          ),
-        ),
-        content: const Text(
-          'Are you sure you want to disable two-factor authentication? This will make your account less secure.',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _disableTwoFactor();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Disable'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _enableTwoFactor() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      // Simulate 2FA setup (in real app, you'd integrate with Firebase Auth 2FA)
-      await Future.delayed(const Duration(seconds: 2));
-      
-      setState(() {
-        _twoFactorEnabled = true;
-        _backupCode = _generateBackupCode();
-      });
-      
-      await _updateSecuritySetting('twoFactorEnabled', true);
-      
-      if (mounted) {
-        _showBackupCodeDialog();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Two-factor authentication enabled successfully!'),
-            backgroundColor: AppTheme.primaryPurple,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error enabling 2FA: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _disableTwoFactor() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      await _updateSecuritySetting('twoFactorEnabled', false);
-      
-      setState(() {
-        _twoFactorEnabled = false;
-        _backupCode = '';
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Two-factor authentication disabled'),
-            backgroundColor: AppTheme.primaryPurple,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error disabling 2FA: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showBackupCodeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Backup Code Generated',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Save this backup code in a safe place. You can use it to access your account if you lose your authenticator device.',
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryPurple.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.primaryPurple.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _backupCode,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: _backupCode));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Backup code copied to clipboard'),
-                          backgroundColor: AppTheme.primaryPurple,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.copy),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('I\'ve Saved It'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _generateBackupCodes() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Generate New Backup Codes',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        content: const Text(
-          'This will generate new backup codes and invalidate your old ones. Make sure to save the new codes in a safe place.',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                _backupCode = _generateBackupCode();
-              });
-              _showBackupCodeDialog();
-            },
-            child: const Text('Generate'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _generateBackupCode() {
-    final codes = _securityService.generateBackupCodes(count: 1);
-    return codes.isNotEmpty ? codes.first : '';
   }
 
   Future<void> _updateSecuritySetting(String key, dynamic value) async {
@@ -637,18 +325,17 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
       final user = _authService.currentUser;
       if (user != null) {
         await _authService.updateUserProfile(additionalData: {key: value});
+        setState(() {
+          if (key == 'loginNotifications') {
+            _loginNotifications = value;
+          } else if (key == 'suspiciousActivityAlerts') {
+            _suspiciousActivityAlerts = value;
+          }
+        });
       }
     } catch (e) {
       print('Error updating security setting: $e');
     }
-  }
-
-  void _showActiveSessions() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const ActiveSessionsScreen(),
-      ),
-    );
   }
 
   void _showLoginHistory() {
@@ -657,6 +344,100 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
         builder: (context) => const LoginHistoryScreen(),
       ),
     );
+  }
+
+  void _changePassword() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Change Password',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        content: const Text(
+          'Password change functionality will be implemented in a future update.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteAccount() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Delete Account',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _confirmDeleteAccount();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    try {
+      await _authService.deleteAccount();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account deleted successfully'),
+            backgroundColor: AppTheme.primaryPurple,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting account: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _resetSecuritySettings() {
@@ -670,12 +451,14 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
           'Reset Security Settings',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: AppTheme.textPrimary,
           ),
         ),
         content: const Text(
-          'Are you sure you want to reset all security settings to default? This will disable two-factor authentication and reset all notification preferences.',
-          style: TextStyle(color: AppTheme.textSecondary),
+          'Are you sure you want to reset all security settings to default? This will reset all notification preferences.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
@@ -685,9 +468,12 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              await _performSecurityReset();
+              await _confirmResetSettings();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Reset'),
           ),
         ],
@@ -695,19 +481,14 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     );
   }
 
-  Future<void> _performSecurityReset() async {
-    setState(() => _isLoading = true);
-    
+  Future<void> _confirmResetSettings() async {
     try {
-      await _updateSecuritySetting('twoFactorEnabled', false);
       await _updateSecuritySetting('loginNotifications', true);
       await _updateSecuritySetting('suspiciousActivityAlerts', true);
       
       setState(() {
-        _twoFactorEnabled = false;
         _loginNotifications = true;
         _suspiciousActivityAlerts = true;
-        _backupCode = '';
       });
       
       if (mounted) {
@@ -727,8 +508,6 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
           ),
         );
       }
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 }
