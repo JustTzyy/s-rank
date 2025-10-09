@@ -7,6 +7,7 @@ import '../services/flashcard_service.dart';
 import '../services/rank_service.dart';
 import '../services/challenge_completion_service.dart';
 import '../services/auth_service.dart';
+import '../services/progress_tracking_service.dart';
 import '../theme/app_theme.dart';
 
 class ChallengeScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _ChallengeScreenState extends State<ChallengeScreen>
   final RankService _rankService = RankService();
   final ChallengeCompletionService _completionService = ChallengeCompletionService();
   final AuthService _authService = AuthService();
+  final ProgressTrackingService _progressTrackingService = ProgressTrackingService();
   
   List<Flashcard> _flashcards = [];
   int _currentQuestionIndex = 0;
@@ -286,7 +288,7 @@ class _ChallengeScreenState extends State<ChallengeScreen>
     try {
       // Save completion data
       final sessionDuration = DateTime.now().difference(_sessionStartTime!);
-      final accuracy = _totalQuestions > 0 ? (_correctAnswers / _totalQuestions) * 100 : 0.0;
+      final accuracy = _flashcards.length > 0 ? (_correctAnswers / _flashcards.length) * 100 : 0.0;
       
       final completion = ChallengeCompletion(
         userId: _currentUserId!,
@@ -294,7 +296,7 @@ class _ChallengeScreenState extends State<ChallengeScreen>
         deckId: widget.deck.id!,
         completedAt: DateTime.now(),
         score: _correctAnswers,
-        totalQuestions: _totalQuestions,
+        totalQuestions: _flashcards.length,
         correctAnswers: _correctAnswers,
         accuracy: accuracy,
         timeSpent: sessionDuration,
@@ -302,6 +304,21 @@ class _ChallengeScreenState extends State<ChallengeScreen>
       );
       
       await _completionService.saveCompletion(completion);
+      
+      // Track progress for challenge completion
+      try {
+        await _progressTrackingService.trackStudySession(
+          deckId: widget.deck.id!,
+          duration: sessionDuration.inMinutes,
+          cardsStudied: _flashcards.length,
+          correctAnswers: _correctAnswers,
+          incorrectAnswers: _flashcards.length - _correctAnswers,
+          accuracy: accuracy,
+        );
+        print('Challenge progress tracked successfully');
+      } catch (e) {
+        print('Warning: Could not track challenge progress: $e');
+      }
       
       // Update user profile with total points and rank
       try {
@@ -1298,14 +1315,39 @@ class _ChallengeScreenState extends State<ChallengeScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Continue'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+            child: const Text(
+              'Continue',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
-            child: const Text('Exit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            ),
+            child: const Text(
+              'Exit',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

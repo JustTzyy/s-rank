@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/app_theme.dart';
 
 class AccessibilityService extends ChangeNotifier {
   static AccessibilityService? _instance;
@@ -15,13 +16,11 @@ class AccessibilityService extends ChangeNotifier {
   String _fontSize = 'Medium';
   bool _darkMode = false;
   bool _highContrast = false;
-  bool _screenReader = false;
 
   // Getters
   String get fontSize => _fontSize;
   bool get darkMode => _darkMode;
   bool get highContrast => _highContrast;
-  bool get screenReader => _screenReader;
 
   // Font size multipliers
   double get fontScale {
@@ -48,7 +47,6 @@ class AccessibilityService extends ChangeNotifier {
       _fontSize = prefs.getString('accessibility_font_size') ?? 'Medium';
       _darkMode = prefs.getBool('accessibility_dark_mode') ?? false;
       _highContrast = prefs.getBool('accessibility_high_contrast') ?? false;
-      _screenReader = prefs.getBool('accessibility_screen_reader') ?? false;
       notifyListeners();
     } catch (e) {
       print('Error loading accessibility settings: $e');
@@ -62,7 +60,6 @@ class AccessibilityService extends ChangeNotifier {
       await prefs.setString('accessibility_font_size', _fontSize);
       await prefs.setBool('accessibility_dark_mode', _darkMode);
       await prefs.setBool('accessibility_high_contrast', _highContrast);
-      await prefs.setBool('accessibility_screen_reader', _screenReader);
     } catch (e) {
       print('Error saving accessibility settings: $e');
     }
@@ -89,16 +86,11 @@ class AccessibilityService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Update screen reader
-  Future<void> updateScreenReader(bool screenReader) async {
-    _screenReader = screenReader;
-    await _saveSettings();
-    notifyListeners();
-  }
 
   // Get theme data based on accessibility settings
   ThemeData getThemeData(BuildContext context) {
-    final baseTheme = _darkMode ? ThemeData.dark() : ThemeData.light();
+    // Import AppTheme to use proper themes
+    final baseTheme = _darkMode ? AppTheme.darkTheme : AppTheme.lightTheme;
     
     return baseTheme.copyWith(
       textTheme: _getTextTheme(baseTheme.textTheme),
@@ -153,15 +145,15 @@ class AccessibilityService extends ChangeNotifier {
     if (!_highContrast) return baseColorScheme;
 
     return baseColorScheme.copyWith(
-      primary: _darkMode ? Colors.white : Colors.black,
-      secondary: _darkMode ? Colors.grey[300] : Colors.grey[700],
-      surface: _darkMode ? Colors.grey[900] : Colors.white,
-      background: _darkMode ? Colors.black : Colors.grey[50],
-      error: Colors.red[700],
-      onPrimary: _darkMode ? Colors.black : Colors.white,
-      onSecondary: _darkMode ? Colors.black : Colors.white,
-      onSurface: _darkMode ? Colors.white : Colors.black,
-      onBackground: _darkMode ? Colors.white : Colors.black,
+      primary: _darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+      secondary: _darkMode ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+      surface: _darkMode ? AppTheme.darkSurfaceColor : AppTheme.surfaceColor,
+      background: _darkMode ? AppTheme.darkBackgroundColor : AppTheme.backgroundColor,
+      error: _darkMode ? AppTheme.darkErrorColor : AppTheme.errorColor,
+      onPrimary: _darkMode ? AppTheme.darkBackgroundColor : AppTheme.backgroundColor,
+      onSecondary: _darkMode ? AppTheme.darkBackgroundColor : AppTheme.backgroundColor,
+      onSurface: _darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+      onBackground: _darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
       onError: Colors.white,
     );
   }
@@ -170,10 +162,10 @@ class AccessibilityService extends ChangeNotifier {
   AppBarTheme _getAppBarTheme(AppBarThemeData baseAppBarTheme) {
     return AppBarTheme(
       backgroundColor: _highContrast 
-          ? (_darkMode ? Colors.black : Colors.white)
+          ? (_darkMode ? AppTheme.darkBackgroundColor : AppTheme.backgroundColor)
           : baseAppBarTheme.backgroundColor,
       foregroundColor: _highContrast 
-          ? (_darkMode ? Colors.white : Colors.black)
+          ? (_darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
           : baseAppBarTheme.foregroundColor,
     );
   }
@@ -182,7 +174,7 @@ class AccessibilityService extends ChangeNotifier {
   CardThemeData _getCardTheme(CardThemeData baseCardTheme) {
     return CardThemeData(
       color: _highContrast 
-          ? (_darkMode ? Colors.grey[800] : Colors.grey[100])
+          ? (_darkMode ? AppTheme.darkSurfaceColor : AppTheme.surfaceColor)
           : baseCardTheme.color,
       elevation: _highContrast ? 8.0 : baseCardTheme.elevation,
     );
@@ -193,10 +185,10 @@ class AccessibilityService extends ChangeNotifier {
     return ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: _highContrast 
-            ? (_darkMode ? Colors.white : Colors.black)
-            : const Color(0xFF6B46C1), // AppTheme.primaryPurple
+            ? (_darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
+            : AppTheme.primaryPurple,
         foregroundColor: _highContrast 
-            ? (_darkMode ? Colors.black : Colors.white)
+            ? (_darkMode ? AppTheme.darkBackgroundColor : AppTheme.backgroundColor)
             : Colors.white,
         elevation: _highContrast ? 4.0 : 2.0,
         textStyle: TextStyle(
@@ -212,12 +204,12 @@ class AccessibilityService extends ChangeNotifier {
     return OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: _highContrast 
-            ? (_darkMode ? Colors.white : Colors.black)
-            : const Color(0xFF6B46C1), // AppTheme.primaryPurple
+            ? (_darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
+            : AppTheme.primaryPurple,
         side: BorderSide(
           color: _highContrast 
-              ? (_darkMode ? Colors.white : Colors.black)
-              : const Color(0xFF6B46C1),
+              ? (_darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
+              : AppTheme.primaryPurple,
           width: _highContrast ? 2.0 : 1.0,
         ),
         textStyle: TextStyle(
@@ -234,53 +226,22 @@ class AccessibilityService extends ChangeNotifier {
       border: OutlineInputBorder(
         borderSide: BorderSide(
           color: _highContrast 
-              ? (_darkMode ? Colors.white : Colors.black)
-              : Colors.grey,
+              ? (_darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
+              : (_darkMode ? AppTheme.darkBorderColor : AppTheme.borderColor),
           width: _highContrast ? 2.0 : 1.0,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(
           color: _highContrast 
-              ? (_darkMode ? Colors.white : Colors.black)
-              : const Color(0xFF6B46C1),
+              ? (_darkMode ? AppTheme.darkTextPrimary : AppTheme.textPrimary)
+              : AppTheme.primaryPurple,
           width: _highContrast ? 3.0 : 2.0,
         ),
       ),
     );
   }
 
-  // Get semantic label for screen reader
-  String? getSemanticLabel(String? originalLabel) {
-    if (!_screenReader) return originalLabel;
-    
-    // Add more descriptive labels for screen readers
-    if (originalLabel == null) return null;
-    
-    // You can add more specific semantic labels here
-    return originalLabel;
-  }
-
-  // Get semantic hint for screen reader
-  String? getSemanticHint(String? originalHint) {
-    if (!_screenReader) return originalHint;
-    
-    // Add more descriptive hints for screen readers
-    if (originalHint == null) return null;
-    
-    return originalHint;
-  }
-
-  // Apply accessibility to any widget
-  Widget applyAccessibility(Widget child, {String? semanticLabel, String? semanticHint}) {
-    if (!_screenReader) return child;
-    
-    return Semantics(
-      label: getSemanticLabel(semanticLabel),
-      hint: getSemanticHint(semanticHint),
-      child: child,
-    );
-  }
 
   // Get accessible text style
   TextStyle getAccessibleTextStyle(TextStyle baseStyle) {

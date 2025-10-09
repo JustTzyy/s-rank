@@ -53,12 +53,6 @@ class _AccessibilitySettingsScreenState extends State<AccessibilitySettingsScree
             ],
           ),
           const SizedBox(height: 16),
-          _buildSectionCard(
-            title: 'Assistive Features',
-            children: [
-              _buildScreenReaderSetting(),
-            ],
-          ),
         ],
       ),
     );
@@ -222,32 +216,6 @@ class _AccessibilitySettingsScreenState extends State<AccessibilitySettingsScree
     );
   }
 
-  Widget _buildScreenReaderSetting() {
-    return SwitchListTile(
-      title: const Text(
-        'Screen Reader Support',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textPrimary,
-        ),
-      ),
-      subtitle: const Text(
-        'Enable basic screen reader support for accessibility',
-        style: TextStyle(
-          fontSize: 14,
-          color: AppTheme.textSecondary,
-        ),
-      ),
-      value: _accessibilityService.screenReader,
-      onChanged: (value) async {
-        await _accessibilityService.updateScreenReader(value);
-        _showSnackBar(value ? 'Screen reader support enabled' : 'Screen reader support disabled');
-      },
-      activeColor: AppTheme.primaryPurple,
-      contentPadding: EdgeInsets.zero,
-    );
-  }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

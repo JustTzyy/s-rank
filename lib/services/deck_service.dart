@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/deck.dart';
+import 'flashcard_service.dart';
 
 class DeckService {
   static DeckService? _instance;
@@ -186,9 +187,14 @@ class DeckService {
     }
   }
 
-  // Archive deck (soft delete)
+  // Archive deck (soft delete) - cascades to flashcards
   Future<void> archiveDeck(String deckId) async {
     try {
+      // First, archive all flashcards in this deck
+      final FlashcardService flashcardService = FlashcardService();
+      await flashcardService.archiveAllFlashcardsInDeck(deckId);
+      
+      // Then archive the deck
       await _decksCollection.doc(deckId).update({
         'deletedAt': FieldValue.serverTimestamp(),
       });
@@ -197,14 +203,35 @@ class DeckService {
     }
   }
 
-  // Restore deck from archive
+  // Restore deck from archive - cascades to flashcards
   Future<void> restoreDeck(String deckId) async {
     try {
+      // First, restore the deck
       await _decksCollection.doc(deckId).update({
         'deletedAt': FieldValue.delete(),
       });
+      
+      // Then restore all flashcards in this deck
+      final FlashcardService flashcardService = FlashcardService();
+      await flashcardService.restoreAllFlashcardsInDeck(deckId);
     } catch (e) {
       throw DeckException('Failed to restore deck: $e');
+    }
+  }
+
+  // Get archived decks by course ID
+  Future<List<Deck>> getArchivedDecksByCourseId(String courseId) async {
+    try {
+      final snapshot = await _decksCollection
+          .where('courseId', isEqualTo: courseId)
+          .where('deletedAt', isNull: false) // Only get archived decks
+          .get();
+      
+      return snapshot.docs
+          .map((doc) => Deck.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      throw DeckException('Failed to fetch archived decks: $e');
     }
   }
 

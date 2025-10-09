@@ -21,14 +21,15 @@ class AccessibleWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final accessibilityService = AccessibilityService();
     
+    // Apply font scaling and spacing
     Widget accessibleChild = child;
     
-    // Apply accessibility features
-    if (accessibilityService.screenReader) {
-      accessibleChild = accessibilityService.applyAccessibility(
-        accessibleChild,
-        semanticLabel: semanticLabel,
-        semanticHint: semanticHint,
+    if (applyFontScaling) {
+      accessibleChild = MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaleFactor: accessibilityService.fontScale,
+        ),
+        child: accessibleChild,
       );
     }
     

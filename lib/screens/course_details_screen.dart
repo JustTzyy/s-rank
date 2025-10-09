@@ -529,13 +529,16 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               size: 24,
             ),
             const SizedBox(width: 8),
-            const Text('Challenge Completed!'),
+            const Expanded(
+              child: Text('Challenge Completed!'),
+            ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(
               'You\'ve already completed "${deck.title}"',
               style: const TextStyle(
@@ -562,6 +565,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               ),
             ),
           ],
+        ),
         ),
         actions: [
           TextButton(

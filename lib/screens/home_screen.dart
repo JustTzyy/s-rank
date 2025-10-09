@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DashboardController _controller = DashboardController();
+  final GlobalKey<ProgressDashboardState> _progressDashboardKey = GlobalKey<ProgressDashboardState>();
 
   @override
   void initState() {
@@ -34,6 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _controller.refreshRankAndPoints();
+  }
+
+  // Method to refresh progress dashboard
+  void refreshProgressDashboard() {
+    _progressDashboardKey.currentState?.refreshProgress();
   }
 
   @override
@@ -184,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 20),
                       
                       // Progress Dashboard
-                      const ProgressDashboard(),
+                      ProgressDashboard(key: _progressDashboardKey),
                       
                       // Error Display
                       if (_controller.error != null)
@@ -617,6 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
           course: course,
           onDataChanged: () {
             _controller.refreshRankAndPoints();
+            refreshProgressDashboard();
           },
         ),
       ),
@@ -707,7 +714,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToSettings() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const SettingsScreen(),
+        builder: (context) => SettingsScreen(
+          onDataChanged: refreshProgressDashboard,
+        ),
       ),
     );
   }

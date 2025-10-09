@@ -3,7 +3,6 @@ import '../models/study_session.dart';
 import '../models/flashcard.dart';
 import '../services/study_service.dart';
 import '../services/flashcard_service.dart';
-import '../services/preferences_service.dart';
 import '../services/progress_tracking_service.dart';
 import '../services/adaptive_difficulty_service.dart';
 import '../theme/app_theme.dart';
@@ -26,7 +25,6 @@ class _StudyModeScreenState extends State<StudyModeScreen>
     with TickerProviderStateMixin {
   final StudyService _studyService = StudyService();
   final FlashcardService _flashcardService = FlashcardService();
-  final PreferencesService _preferencesService = PreferencesService();
   final ProgressTrackingService _progressTrackingService = ProgressTrackingService();
   final AdaptiveDifficultyService _adaptiveDifficultyService = AdaptiveDifficultyService();
   
@@ -37,8 +35,6 @@ class _StudyModeScreenState extends State<StudyModeScreen>
   bool _isLoading = true;
   bool _isSessionComplete = false;
   
-  // Study preferences
-  StudyPreferences? _studyPreferences;
   
   // For different question types
   int? _selectedOptionIndex; // For multiple choice
@@ -99,8 +95,6 @@ class _StudyModeScreenState extends State<StudyModeScreen>
     try {
       setState(() => _isLoading = true);
       
-      // Load study preferences
-      _studyPreferences = await _preferencesService.getStudyPreferences();
       
       // Start study session
       _session = await _studyService.startStudySession(
@@ -116,10 +110,8 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         throw Exception('No flashcards available for study');
       }
       
-      // Apply study preferences
-      if (_studyPreferences?.shuffleCards == true) {
-        _flashcards.shuffle();
-      }
+      // Shuffle cards by default
+      _flashcards.shuffle();
       
       setState(() {
         _isLoading = false;
@@ -230,17 +222,12 @@ class _StudyModeScreenState extends State<StudyModeScreen>
       if (_currentCardIndex + 1 >= _flashcards.length) {
         await _completeSession();
       } else {
-        // Check if auto-advance is enabled
-        if (_studyPreferences?.autoAdvance == true) {
-          // Auto-advance after a short delay
-          Future.delayed(const Duration(milliseconds: 1500), () {
-            if (mounted) {
-              _nextCard();
-            }
-          });
-        } else {
-          _nextCard();
-        }
+        // Auto-advance after a short delay
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            _nextCard();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -270,15 +257,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
       if (_session != null) {
         _session = await _studyService.completeStudySession(_session!.id!);
         
-        // Track progress based on user preferences
-        await _progressTrackingService.trackStudySession(
-          deckId: widget.deckId,
-          duration: _totalStudyTime.inMinutes,
-          cardsStudied: _flashcards.length,
-          correctAnswers: _session?.correctAnswers ?? 0,
-          incorrectAnswers: _session?.incorrectAnswers ?? 0,
-          accuracy: _session?.score ?? 0.0,
-        );
+        // Progress tracking is only for challenges, not regular study sessions
       }
       
       setState(() {
@@ -1180,7 +1159,17 @@ class _StudyModeScreenState extends State<StudyModeScreen>
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
-            child: const Text('Go Back'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+            child: const Text(
+              'Go Back',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1212,14 +1201,39 @@ class _StudyModeScreenState extends State<StudyModeScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Continue Studying'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+            child: const Text(
+              'Continue Studying',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
-            child: const Text('Exit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            ),
+            child: const Text(
+              'Exit',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

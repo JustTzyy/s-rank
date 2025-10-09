@@ -308,14 +308,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           decoration: InputDecoration(
             labelText: 'Display Name',
             hintText: 'Enter your display name',
-            prefixIcon: Icon(Icons.person_outline, color: AppTheme.primaryPurple),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            hintStyle: const TextStyle(color: AppTheme.textSecondary),
+            prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryPurple),
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: AppTheme.borderColor),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            enabledBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
               borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -336,14 +345,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           decoration: InputDecoration(
             labelText: 'Email',
             hintText: 'Enter your email address',
-            prefixIcon: Icon(Icons.email_outlined, color: AppTheme.primaryPurple),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            hintStyle: const TextStyle(color: AppTheme.textSecondary),
+            prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.primaryPurple),
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: AppTheme.borderColor),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            enabledBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: AppTheme.borderColor),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
               borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
             ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/preferences_service.dart';
 import 'goal_tracking_service.dart';
 
 class ProgressTrackingService {
@@ -15,7 +14,6 @@ class ProgressTrackingService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final PreferencesService _preferencesService = PreferencesService();
   final GoalTrackingService _goalTrackingService = GoalTrackingService();
 
   // Track study session progress
@@ -29,68 +27,68 @@ class ProgressTrackingService {
   }) async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        print('Progress tracking: No user logged in');
+        return;
+      }
+
+      print('Progress tracking: Starting session tracking');
+      print('Duration: $duration minutes, Cards: $cardsStudied, Correct: $correctAnswers, Incorrect: $incorrectAnswers');
 
       // Check privacy settings first
       // Privacy service removed - assume data collection is allowed
       final canCollectStudyData = true;
       if (!canCollectStudyData) return;
 
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings == null) return;
+      // Progress tracking is always enabled
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // Update daily progress
+      // Update daily progress (all tracking is always enabled)
       await _updateDailyProgress(
         userId: user.uid,
         date: today,
-        duration: settings.trackStudyTime ? duration : 0,
+        duration: duration,
         cardsStudied: cardsStudied,
-        correctAnswers: settings.trackAccuracy ? correctAnswers : 0,
-        incorrectAnswers: settings.trackAccuracy ? incorrectAnswers : 0,
-        accuracy: settings.trackAccuracy ? accuracy : 0.0,
+        correctAnswers: correctAnswers,
+        incorrectAnswers: incorrectAnswers,
+        accuracy: accuracy,
       );
 
-      // Update goal tracking
-      if (settings.trackStudyTime) {
-        await _goalTrackingService.updateDailyStudyProgress(minutesStudied: duration);
-      }
-      if (settings.trackPoints) {
-        await _goalTrackingService.updateDailyCardProgress(cardsStudied: cardsStudied);
-      }
+      // Update goal tracking (always enabled)
+      print('Progress tracking: Updating goal tracking');
+      await _goalTrackingService.updateDailyStudyProgress(minutesStudied: duration);
+      await _goalTrackingService.updateDailyCardProgress(cardsStudied: cardsStudied);
+      print('Progress tracking: Goal tracking updated');
 
-      // Update weekly progress
+      // Update weekly progress (all tracking is always enabled)
       await _updateWeeklyProgress(
         userId: user.uid,
         weekStart: _getWeekStart(today),
-        duration: settings.trackStudyTime ? duration : 0,
+        duration: duration,
         cardsStudied: cardsStudied,
-        correctAnswers: settings.trackAccuracy ? correctAnswers : 0,
-        incorrectAnswers: settings.trackAccuracy ? incorrectAnswers : 0,
-        accuracy: settings.trackAccuracy ? accuracy : 0.0,
+        correctAnswers: correctAnswers,
+        incorrectAnswers: incorrectAnswers,
+        accuracy: accuracy,
       );
 
-      // Update deck progress
+      // Update deck progress (all tracking is always enabled)
       await _updateDeckProgress(
         userId: user.uid,
         deckId: deckId,
         cardsStudied: cardsStudied,
-        correctAnswers: settings.trackAccuracy ? correctAnswers : 0,
-        incorrectAnswers: settings.trackAccuracy ? incorrectAnswers : 0,
-        accuracy: settings.trackAccuracy ? accuracy : 0.0,
+        correctAnswers: correctAnswers,
+        incorrectAnswers: incorrectAnswers,
+        accuracy: accuracy,
       );
 
-      // Update user points if tracking is enabled
-      if (settings.trackPoints) {
-        await _updateUserPoints(user.uid, correctAnswers, duration);
-      }
+      // Update user points (always enabled)
+      await _updateUserPoints(user.uid, correctAnswers, duration);
 
-      // Update study streak if tracking is enabled
-      if (settings.trackStreaks) {
-        await _updateStudyStreak(user.uid, today);
-      }
+      // Update study streak (always enabled)
+      await _updateStudyStreak(user.uid, today);
+      print('Progress tracking: Session tracking completed successfully');
     } catch (e) {
       print('Error tracking study session: $e');
     }
@@ -100,19 +98,26 @@ class ProgressTrackingService {
   Future<DailyProgress?> getDailyProgress(DateTime date) async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return null;
+      if (user == null) {
+        print('Progress tracking: No user logged in for getDailyProgress');
+        return null;
+      }
+
+      final dateKey = _formatDate(date);
 
       final doc = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('dailyProgress')
-          .doc(_formatDate(date))
+          .doc(dateKey)
           .get();
 
       if (doc.exists) {
-        return DailyProgress.fromMap(doc.data()!);
+        final data = doc.data()!;
+        return DailyProgress.fromMap(data);
+      } else {
+        return null;
       }
-      return null;
     } catch (e) {
       print('Error getting daily progress: $e');
       return null;
@@ -169,25 +174,32 @@ class ProgressTrackingService {
   Future<GoalProgress> getGoalProgress() async {
     try {
       final user = _auth.currentUser;
-      final settings = await _preferencesService.getProgressSettings();
-      if (user == null || settings == null) {
+      if (user == null) {
+        print('Progress tracking: No user logged in for getGoalProgress');
         return GoalProgress.empty();
       }
 
       final today = DateTime.now();
+      
       final dailyProgress = await getDailyProgress(today);
       final weeklyProgress = await getWeeklyProgress(_getWeekStart(today));
 
-      return GoalProgress(
-        dailyStudyGoal: settings.dailyStudyGoal,
+      // Get goal settings
+      final settings = await _goalTrackingService.getGoalSettings();
+
+      final goalProgress = GoalProgress(
+        dailyStudyGoal: settings?.dailyStudyGoal ?? 30,
         dailyStudyProgress: dailyProgress?.duration ?? 0,
-        dailyCardGoal: settings.dailyCardGoal,
+        dailyCardGoal: settings?.dailyCardGoal ?? 20,
         dailyCardProgress: dailyProgress?.cardsStudied ?? 0,
-        weeklyStudyGoal: settings.weeklyStudyGoal,
+        weeklyStudyGoal: settings?.weeklyStudyGoal ?? 180,
         weeklyStudyProgress: weeklyProgress?.duration ?? 0,
-        weeklyCardGoal: settings.weeklyCardGoal,
+        weeklyCardGoal: settings?.weeklyCardGoal ?? 100,
         weeklyCardProgress: weeklyProgress?.cardsStudied ?? 0,
       );
+      
+      
+      return goalProgress;
     } catch (e) {
       print('Error getting goal progress: $e');
       return GoalProgress.empty();
@@ -204,21 +216,37 @@ class ProgressTrackingService {
     required int incorrectAnswers,
     required double accuracy,
   }) async {
+    final dateKey = _formatDate(date);
+    
     final docRef = _firestore
         .collection('users')
         .doc(userId)
         .collection('dailyProgress')
-        .doc(_formatDate(date));
+        .doc(dateKey);
 
+    // Get current values first to avoid conflicts with goal tracking service
+    final currentDoc = await docRef.get();
+    final currentData = currentDoc.data();
+    
+    final currentDuration = (currentData?['duration'] as int?) ?? 0;
+    final currentCards = (currentData?['cardsStudied'] as int?) ?? 0;
+    final currentCorrect = (currentData?['correctAnswers'] as int?) ?? 0;
+    final currentIncorrect = (currentData?['incorrectAnswers'] as int?) ?? 0;
+    
+    final newDuration = currentDuration + duration;
+    final newCards = currentCards + cardsStudied;
+    
+    
     await docRef.set({
       'date': Timestamp.fromDate(date),
-      'duration': FieldValue.increment(duration),
-      'cardsStudied': FieldValue.increment(cardsStudied),
-      'correctAnswers': FieldValue.increment(correctAnswers),
-      'incorrectAnswers': FieldValue.increment(incorrectAnswers),
+      'duration': newDuration,
+      'cardsStudied': newCards,
+      'correctAnswers': currentCorrect + correctAnswers,
+      'incorrectAnswers': currentIncorrect + incorrectAnswers,
       'accuracy': accuracy, // This will be recalculated
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    
   }
 
   Future<void> _updateWeeklyProgress({
@@ -236,12 +264,21 @@ class ProgressTrackingService {
         .collection('weeklyProgress')
         .doc(_formatDate(weekStart));
 
+    // Get current values first to avoid conflicts
+    final currentDoc = await docRef.get();
+    final currentData = currentDoc.data();
+    
+    final currentDuration = (currentData?['duration'] as int?) ?? 0;
+    final currentCards = (currentData?['cardsStudied'] as int?) ?? 0;
+    final currentCorrect = (currentData?['correctAnswers'] as int?) ?? 0;
+    final currentIncorrect = (currentData?['incorrectAnswers'] as int?) ?? 0;
+    
     await docRef.set({
       'weekStart': Timestamp.fromDate(weekStart),
-      'duration': FieldValue.increment(duration),
-      'cardsStudied': FieldValue.increment(cardsStudied),
-      'correctAnswers': FieldValue.increment(correctAnswers),
-      'incorrectAnswers': FieldValue.increment(incorrectAnswers),
+      'duration': currentDuration + duration,
+      'cardsStudied': currentCards + cardsStudied,
+      'correctAnswers': currentCorrect + correctAnswers,
+      'incorrectAnswers': currentIncorrect + incorrectAnswers,
       'accuracy': accuracy, // This will be recalculated
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -261,11 +298,19 @@ class ProgressTrackingService {
         .collection('deckProgress')
         .doc(deckId);
 
+    // Get current values first to avoid conflicts
+    final currentDoc = await docRef.get();
+    final currentData = currentDoc.data();
+    
+    final currentCards = (currentData?['totalCardsStudied'] as int?) ?? 0;
+    final currentCorrect = (currentData?['totalCorrectAnswers'] as int?) ?? 0;
+    final currentIncorrect = (currentData?['totalIncorrectAnswers'] as int?) ?? 0;
+    
     await docRef.set({
       'deckId': deckId,
-      'totalCardsStudied': FieldValue.increment(cardsStudied),
-      'totalCorrectAnswers': FieldValue.increment(correctAnswers),
-      'totalIncorrectAnswers': FieldValue.increment(incorrectAnswers),
+      'totalCardsStudied': currentCards + cardsStudied,
+      'totalCorrectAnswers': currentCorrect + correctAnswers,
+      'totalIncorrectAnswers': currentIncorrect + incorrectAnswers,
       'overallAccuracy': accuracy, // This will be recalculated
       'lastStudied': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -340,6 +385,146 @@ class ProgressTrackingService {
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  // Get daily history
+  Future<List<DailyProgressHistory>> getDailyHistory(int days) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return [];
+
+      final today = DateTime.now();
+      final List<DailyProgressHistory> history = [];
+      
+      
+      // Get goal settings for consistent goal values
+      final settings = await _goalTrackingService.getGoalSettings();
+
+      // Use the same method as dashboard for consistency
+      for (int i = 0; i < days; i++) {
+        final date = today.subtract(Duration(days: i));
+        final progress = await getDailyProgress(date);
+        
+        
+        // Calculate study streak (simplified for single day)
+        int streak = 0;
+        if (progress != null && progress.duration > 0) {
+          // For today, just check if there's any progress
+          streak = 1;
+        }
+
+        history.add(DailyProgressHistory(
+          date: date,
+          duration: progress?.duration ?? 0,
+          cardsStudied: progress?.cardsStudied ?? 0,
+          correctAnswers: progress?.correctAnswers ?? 0,
+          incorrectAnswers: progress?.incorrectAnswers ?? 0,
+          accuracy: progress?.accuracy ?? 0.0,
+          dailyStudyGoal: settings?.dailyStudyGoal ?? 30,
+          dailyCardGoal: settings?.dailyCardGoal ?? 20,
+          studyStreak: streak,
+        ));
+      }
+
+      return history;
+    } catch (e) {
+      print('Error getting daily history: $e');
+      return [];
+    }
+  }
+
+  // Get weekly history
+  Future<List<WeeklyProgressHistory>> getWeeklyHistory(int weeks) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return [];
+
+      final today = DateTime.now();
+      final List<WeeklyProgressHistory> history = [];
+      
+      // Get goal settings for consistent goal values
+      final settings = await _goalTrackingService.getGoalSettings();
+
+      // Fetch daily progress data for the requested weeks
+      final startDate = today.subtract(Duration(days: (today.weekday - 1) + ((weeks - 1) * 7)));
+      final endDate = today;
+      
+      final query = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('dailyProgress')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .orderBy('date', descending: true)
+          .get();
+
+      // Create a map for quick lookup
+      final Map<String, DailyProgress> progressMap = {};
+      for (final doc in query.docs) {
+        final data = doc.data();
+        final date = (data['date'] as Timestamp).toDate();
+        final dateKey = _formatDate(date);
+        
+        progressMap[dateKey] = DailyProgress(
+          date: date,
+          duration: (data['duration'] as int?) ?? 0,
+          cardsStudied: (data['cardsStudied'] as int?) ?? 0,
+          correctAnswers: (data['correctAnswers'] as int?) ?? 0,
+          incorrectAnswers: (data['incorrectAnswers'] as int?) ?? 0,
+          accuracy: (data['accuracy'] as double?) ?? 0.0,
+        );
+      }
+
+      for (int i = 0; i < weeks; i++) {
+        final weekStart = today.subtract(Duration(days: (today.weekday - 1) + (i * 7)));
+        final weekStartNormalized = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        
+        // Get all daily progress for this week using the map
+        int totalDuration = 0;
+        int totalCards = 0;
+        int totalCorrect = 0;
+        int totalIncorrect = 0;
+        int studyDays = 0;
+        
+        for (int day = 0; day < 7; day++) {
+          final date = weekStartNormalized.add(Duration(days: day));
+          final dateKey = _formatDate(date);
+          final progress = progressMap[dateKey];
+          
+          if (progress != null) {
+            totalDuration += progress.duration;
+            totalCards += progress.cardsStudied;
+            totalCorrect += progress.correctAnswers;
+            totalIncorrect += progress.incorrectAnswers;
+            
+            if (progress.duration > 0) {
+              studyDays++;
+            }
+          }
+        }
+        
+        // Calculate average accuracy
+        final totalAnswers = totalCorrect + totalIncorrect;
+        final accuracy = totalAnswers > 0 ? (totalCorrect / totalAnswers) * 100 : 0.0;
+
+        history.add(WeeklyProgressHistory(
+          weekStart: weekStartNormalized,
+          duration: totalDuration,
+          cardsStudied: totalCards,
+          correctAnswers: totalCorrect,
+          incorrectAnswers: totalIncorrect,
+          accuracy: accuracy,
+          weeklyStudyGoal: settings?.weeklyStudyGoal ?? 180,
+          weeklyCardGoal: settings?.weeklyCardGoal ?? 100,
+          studyDays: studyDays,
+        ));
+      }
+
+      return history;
+    } catch (e) {
+      print('Error getting weekly history: $e');
+      return [];
+    }
   }
 }
 
@@ -454,4 +639,53 @@ class GoalProgress {
     if (weeklyCardGoal == 0) return 0.0;
     return (weeklyCardProgress / weeklyCardGoal).clamp(0.0, 1.0);
   }
+}
+
+// History data models
+class DailyProgressHistory {
+  final DateTime date;
+  final int duration;
+  final int cardsStudied;
+  final int correctAnswers;
+  final int incorrectAnswers;
+  final double accuracy;
+  final int dailyStudyGoal;
+  final int dailyCardGoal;
+  final int studyStreak;
+
+  DailyProgressHistory({
+    required this.date,
+    required this.duration,
+    required this.cardsStudied,
+    required this.correctAnswers,
+    required this.incorrectAnswers,
+    required this.accuracy,
+    required this.dailyStudyGoal,
+    required this.dailyCardGoal,
+    required this.studyStreak,
+  });
+}
+
+class WeeklyProgressHistory {
+  final DateTime weekStart;
+  final int duration;
+  final int cardsStudied;
+  final int correctAnswers;
+  final int incorrectAnswers;
+  final double accuracy;
+  final int weeklyStudyGoal;
+  final int weeklyCardGoal;
+  final int studyDays;
+
+  WeeklyProgressHistory({
+    required this.weekStart,
+    required this.duration,
+    required this.cardsStudied,
+    required this.correctAnswers,
+    required this.incorrectAnswers,
+    required this.accuracy,
+    required this.weeklyStudyGoal,
+    required this.weeklyCardGoal,
+    required this.studyDays,
+  });
 }

@@ -9,7 +9,9 @@ import 'accessibility_settings_screen.dart';
 import 'system_guide_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final VoidCallback? onDataChanged;
+  
+  const SettingsScreen({super.key, this.onDataChanged});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -169,7 +171,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => const AccountSettingsScreen(),
+                builder: (context) => AccountSettingsScreen(
+                  onDataChanged: widget.onDataChanged,
+                ),
               ),
             );
           },
@@ -281,7 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ElevatedButton(
         onPressed: _showLogoutConfirmation,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(

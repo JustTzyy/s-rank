@@ -3,13 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import 'account_security_screen.dart';
-import 'study_preferences_screen.dart';
-import 'progress_settings_screen.dart';
-import 'notification_settings_screen.dart';
+import 'login_history_screen.dart';
+import 'goal_settings_screen.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
-  const AccountSettingsScreen({super.key});
+  final VoidCallback? onDataChanged;
+  
+  const AccountSettingsScreen({super.key, this.onDataChanged});
 
   @override
   State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
@@ -59,21 +59,19 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               onTap: _showChangePasswordDialog,
             ),
             
-            _buildAccountItem(
-              icon: Icons.email_outlined,
-              title: 'Email Verification',
-              subtitle: _authService.currentUser?.emailVerified == true 
-                  ? 'Email is verified' 
-                  : 'Verify your email address',
-              onTap: _sendEmailVerification,
-            ),
-            
-            _buildAccountItem(
-              icon: Icons.security,
-              title: 'Account Security',
-              subtitle: 'Two-factor authentication and security settings',
-              onTap: _showSecuritySettings,
-            ),
+                _buildAccountItem(
+                  icon: Icons.history,
+                  title: 'Login History',
+                  subtitle: 'View recent login attempts and sessions',
+                  onTap: _showLoginHistory,
+                ),
+                
+                _buildAccountItem(
+                  icon: Icons.flag,
+                  title: 'Goal Settings',
+                  subtitle: 'Customize your study goals and targets',
+                  onTap: _showGoalSettings,
+                ),
             
             _buildAccountItem(
               icon: Icons.delete_forever,
@@ -83,32 +81,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               isDestructive: true,
             ),
             
-            const SizedBox(height: 32),
-            
-            // Learning App Specific Features
-            _buildSectionTitle('Learning Preferences'),
-            const SizedBox(height: 16),
-            
-            _buildAccountItem(
-              icon: Icons.school_outlined,
-              title: 'Study Preferences',
-              subtitle: 'Set study reminders and difficulty levels',
-              onTap: _showStudyPreferences,
-            ),
-            
-            _buildAccountItem(
-              icon: Icons.trending_up,
-              title: 'Progress Settings',
-              subtitle: 'Configure how progress is tracked',
-              onTap: _showProgressSettings,
-            ),
-            
-            _buildAccountItem(
-              icon: Icons.notifications_outlined,
-              title: 'Notification Settings',
-              subtitle: 'Manage study reminders and achievements',
-              onTap: _showNotificationSettings,
-            ),
             
           ],
         ),
@@ -196,25 +168,43 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.backgroundColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         title: const Text(
           'Change Password',
           style: TextStyle(
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: AppTheme.textPrimary,
           ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             TextField(
               controller: currentPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Current Password',
-                border: OutlineInputBorder(),
+                labelStyle: TextStyle(color: AppTheme.textSecondary),
+                filled: true,
+                fillColor: AppTheme.backgroundColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               ),
             ),
             const SizedBox(height: 16),
@@ -223,7 +213,22 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'New Password',
-                border: OutlineInputBorder(),
+                labelStyle: TextStyle(color: AppTheme.textSecondary),
+                filled: true,
+                fillColor: AppTheme.backgroundColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               ),
             ),
             const SizedBox(height: 16),
@@ -232,15 +237,41 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Confirm New Password',
-                border: OutlineInputBorder(),
+                labelStyle: TextStyle(color: AppTheme.textSecondary),
+                filled: true,
+                fillColor: AppTheme.backgroundColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               ),
             ),
           ],
         ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -248,7 +279,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Passwords do not match'),
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppTheme.errorColor,
                   ),
                 );
                 return;
@@ -274,66 +305,49 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppTheme.errorColor,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Change Password'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryPurple,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            ),
+            child: const Text(
+              'Change Password',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _sendEmailVerification() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      await _authService.sendEmailVerification();
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification email sent! Check your inbox.'),
-            backgroundColor: AppTheme.primaryPurple,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        String errorMessage = 'Error sending verification email';
-        
-        // Provide more user-friendly error messages
-        if (e.toString().contains('Email is already verified')) {
-          errorMessage = 'Your email is already verified!';
-        } else if (e.toString().contains('No user logged in')) {
-          errorMessage = 'Please log in to send verification email';
-        } else if (e.toString().contains('too-many-requests')) {
-          errorMessage = 'Too many requests. Please try again later.';
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: e.toString().contains('already verified') 
-                ? AppTheme.primaryPurple 
-                : Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
 
-  void _showSecuritySettings() {
+  void _showLoginHistory() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const AccountSecurityScreen(),
+        builder: (context) => const LoginHistoryScreen(),
+      ),
+    );
+  }
+
+  void _showGoalSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => GoalSettingsScreen(
+          onDataChanged: widget.onDataChanged,
+        ),
       ),
     );
   }
@@ -414,29 +428,5 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     );
   }
 
-  // Learning App Specific Features
-  void _showStudyPreferences() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const StudyPreferencesScreen(),
-      ),
-    );
-  }
-
-  void _showProgressSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const ProgressSettingsScreen(),
-      ),
-    );
-  }
-
-  void _showNotificationSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const NotificationSettingsScreen(),
-      ),
-    );
-  }
 
 }

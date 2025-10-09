@@ -346,15 +346,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 OutlinedButton.icon(
                   onPressed: _isLoading ? null : _signInWithGoogle,
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: AppTheme.backgroundColor,
                     foregroundColor: AppTheme.textPrimary,
-                    side: const BorderSide(color: AppTheme.borderColor),
+                    side: const BorderSide(color: AppTheme.borderColor, width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                    elevation: 1,
                   ),
-                  icon: const Icon(Icons.g_mobiledata, size: 24),
-                  label: const Text('Continue with Google'),
+                  icon: const Icon(Icons.g_mobiledata, size: 24, color: AppTheme.textPrimary),
+                  label: const Text(
+                    'Continue with Google',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 32),
                 
@@ -375,7 +383,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           MaterialPageRoute(builder: (context) => const SignupScreen()),
                         );
                       },
-                      child: const Text('Sign Up'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primaryPurple,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                      child: const Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -384,6 +402,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    ), ) );
+    ) ));
   }
 }

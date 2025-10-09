@@ -25,8 +25,24 @@ class AuthService {
         email: email,
         password: password,
       );
+      
+      // Track successful login
+      await _trackLoginAttempt(
+        isSuccessful: true,
+        method: 'email',
+        userEmail: email,
+      );
+      
       return result;
     } on FirebaseAuthException catch (e) {
+      // Track failed login
+      await _trackLoginAttempt(
+        isSuccessful: false,
+        method: 'email',
+        userEmail: email,
+        errorMessage: e.message,
+      );
+      
       throw _handleAuthException(e);
     }
   }
@@ -260,6 +276,67 @@ class AuthService {
       _auth.signOut(),
       _googleSignIn.signOut(),
     ]);
+  }
+
+  // Track login attempts
+  Future<void> _trackLoginAttempt({
+    required bool isSuccessful,
+    required String method,
+    String? userEmail,
+    String? errorMessage,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final loginData = {
+        'timestamp': FieldValue.serverTimestamp(),
+        'isSuccessful': isSuccessful,
+        'method': method,
+        'userEmail': userEmail ?? user.email,
+        'deviceInfo': await _getDeviceInfo(),
+        'ipAddress': await _getIPAddress(),
+        'location': await _getLocation(),
+        'userAgent': await _getUserAgent(),
+        'errorMessage': errorMessage,
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('loginHistory')
+          .add(loginData);
+    } catch (e) {
+      print('Error tracking login attempt: $e');
+    }
+  }
+
+  // Get device information
+  Future<String> _getDeviceInfo() async {
+    // This would typically use device_info_plus package
+    // For now, return a placeholder
+    return 'Mobile Device';
+  }
+
+  // Get IP address
+  Future<String> _getIPAddress() async {
+    // This would typically use a service to get the user's IP
+    // For now, return a placeholder
+    return 'Unknown';
+  }
+
+  // Get location
+  Future<String> _getLocation() async {
+    // This would typically use geolocation services
+    // For now, return a placeholder
+    return 'Unknown';
+  }
+
+  // Get user agent
+  Future<String> _getUserAgent() async {
+    // This would typically get the actual user agent
+    // For now, return a placeholder
+    return 'Flutter App';
   }
 
   // Handle Firebase Auth exceptions

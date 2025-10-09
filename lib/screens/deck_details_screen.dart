@@ -620,7 +620,7 @@ class _AddFlashcardModalState extends State<_AddFlashcardModal> {
             topRight: Radius.circular(20),
           ),
         ),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,

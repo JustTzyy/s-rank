@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'preferences_service.dart';
 import 'notification_service.dart';
 
 class GoalTrackingService {
@@ -15,7 +14,6 @@ class GoalTrackingService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final PreferencesService _preferencesService = PreferencesService();
   final NotificationService _notificationService = NotificationService();
 
   // Track daily study goal progress
@@ -24,47 +22,42 @@ class GoalTrackingService {
   }) async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        print('Goal tracking: No user logged in');
+        return;
+      }
 
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings == null || !settings.trackStudyTime) return;
+      print('Goal tracking: Updating daily study progress - $minutesStudied minutes');
+
+      // Progress tracking is always enabled
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // Get current progress
+      // Note: Progress tracking is now handled by ProgressTrackingService
+      // This method is kept for backward compatibility but doesn't update Firestore
+      // to avoid conflicts with the main progress tracking service
+      print('Goal tracking: Progress tracking handled by ProgressTrackingService');
+      print('Goal tracking: Firestore updated successfully');
+
+      // Check if daily goal is achieved
+      final settings = await getGoalSettings();
+      final dailyStudyGoal = settings?.dailyStudyGoal ?? 30;
+      
+      // Get current progress from ProgressTrackingService
       final progressDoc = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('dailyProgress')
           .doc(today.toIso8601String().split('T')[0])
           .get();
-
-      int currentMinutes = 0;
-      if (progressDoc.exists) {
-        currentMinutes = progressDoc.data()?['studyMinutes'] ?? 0;
-      }
-
-      final newTotal = currentMinutes + minutesStudied;
-
-      // Update progress
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('dailyProgress')
-          .doc(today.toIso8601String().split('T')[0])
-          .set({
-        'studyMinutes': newTotal,
-        'date': today,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // Check if daily goal is achieved
-      if (newTotal >= settings.dailyStudyGoal && currentMinutes < settings.dailyStudyGoal) {
+      
+      final currentMinutes = progressDoc.data()?['duration'] ?? 0;
+      if (currentMinutes >= dailyStudyGoal) {
         await _handleGoalAchievement(
           type: 'daily_study',
-          goal: settings.dailyStudyGoal,
-          achieved: newTotal,
+          goal: dailyStudyGoal,
+          achieved: currentMinutes,
         );
       }
 
@@ -83,45 +76,34 @@ class GoalTrackingService {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings == null || !settings.trackPoints) return;
+      // Points tracking is always enabled
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // Get current progress
+      // Note: Progress tracking is now handled by ProgressTrackingService
+      // This method is kept for backward compatibility but doesn't update Firestore
+      // to avoid conflicts with the main progress tracking service
+      print('Goal tracking: Card progress tracking handled by ProgressTrackingService');
+
+      // Check if daily card goal is achieved
+      final settings = await getGoalSettings();
+      final dailyCardGoal = settings?.dailyCardGoal ?? 20;
+      
+      // Get current progress from ProgressTrackingService
       final progressDoc = await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('dailyProgress')
           .doc(today.toIso8601String().split('T')[0])
           .get();
-
-      int currentCards = 0;
-      if (progressDoc.exists) {
-        currentCards = progressDoc.data()?['cardsStudied'] ?? 0;
-      }
-
-      final newTotal = currentCards + cardsStudied;
-
-      // Update progress
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('dailyProgress')
-          .doc(today.toIso8601String().split('T')[0])
-          .set({
-        'cardsStudied': newTotal,
-        'date': today,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // Check if daily card goal is achieved
-      if (newTotal >= settings.dailyCardGoal && currentCards < settings.dailyCardGoal) {
+      
+      final currentCards = progressDoc.data()?['cardsStudied'] ?? 0;
+      if (currentCards >= dailyCardGoal) {
         await _handleGoalAchievement(
           type: 'daily_cards',
-          goal: settings.dailyCardGoal,
-          achieved: newTotal,
+          goal: dailyCardGoal,
+          achieved: currentCards,
         );
       }
 
@@ -177,9 +159,9 @@ class GoalTrackingService {
 
       for (final doc in query.docs) {
         final data = doc.data();
-        totalStudyMinutes += (data['studyMinutes'] as int?) ?? 0;
+        totalStudyMinutes += (data['duration'] as int?) ?? 0;
         totalCardsStudied += (data['cardsStudied'] as int?) ?? 0;
-        if (((data['studyMinutes'] as int?) ?? 0) > 0) {
+        if (((data['duration'] as int?) ?? 0) > 0) {
           studyDays++;
         }
       }
@@ -202,24 +184,26 @@ class GoalTrackingService {
       final user = _auth.currentUser;
       if (user == null) return GoalProgressSummary();
 
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings == null) return GoalProgressSummary();
+      // Progress tracking is always enabled
 
       final today = DateTime.now();
       final weekStart = today.subtract(Duration(days: today.weekday - 1));
+
+      // Get goal settings
+      final settings = await getGoalSettings();
 
       // Get today's progress
       final todayProgress = await getDailyProgress(today);
       final weeklyProgress = await getWeeklyProgress(weekStart);
 
       return GoalProgressSummary(
-        dailyStudyGoal: settings.dailyStudyGoal,
-        dailyStudyProgress: todayProgress?.studyMinutes ?? 0,
-        dailyCardGoal: settings.dailyCardGoal,
+        dailyStudyGoal: settings?.dailyStudyGoal ?? 30,
+        dailyStudyProgress: todayProgress?.duration ?? 0,
+        dailyCardGoal: settings?.dailyCardGoal ?? 20,
         dailyCardProgress: todayProgress?.cardsStudied ?? 0,
-        weeklyStudyGoal: settings.weeklyStudyGoal,
+        weeklyStudyGoal: settings?.weeklyStudyGoal ?? 180,
         weeklyStudyProgress: weeklyProgress.totalStudyMinutes,
-        weeklyCardGoal: settings.weeklyCardGoal,
+        weeklyCardGoal: settings?.weeklyCardGoal ?? 100,
         weeklyCardProgress: weeklyProgress.totalCardsStudied,
         studyStreak: await _getCurrentStreak(),
         longestStreak: await _getLongestStreak(),
@@ -236,8 +220,7 @@ class GoalTrackingService {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings == null) return;
+      // Progress tracking is always enabled
 
       final today = DateTime.now();
       final weekStart = today.subtract(Duration(days: today.weekday - 1));
@@ -251,10 +234,12 @@ class GoalTrackingService {
           .doc('${weekStart.toIso8601String().split('T')[0]}_weekly_study')
           .get();
 
-      if (weeklyProgress.totalStudyMinutes >= settings.weeklyStudyGoal && !goalDoc.exists) {
+      final settings = await getGoalSettings();
+      final weeklyStudyGoal = settings?.weeklyStudyGoal ?? 180;
+      if (weeklyProgress.totalStudyMinutes >= weeklyStudyGoal && !goalDoc.exists) {
         await _handleGoalAchievement(
           type: 'weekly_study',
-          goal: settings.weeklyStudyGoal,
+          goal: weeklyStudyGoal,
           achieved: weeklyProgress.totalStudyMinutes,
         );
       }
@@ -269,8 +254,7 @@ class GoalTrackingService {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings == null) return;
+      // Progress tracking is always enabled
 
       final today = DateTime.now();
       final weekStart = today.subtract(Duration(days: today.weekday - 1));
@@ -284,10 +268,12 @@ class GoalTrackingService {
           .doc('${weekStart.toIso8601String().split('T')[0]}_weekly_cards')
           .get();
 
-      if (weeklyProgress.totalCardsStudied >= settings.weeklyCardGoal && !goalDoc.exists) {
+      final settings = await getGoalSettings();
+      final weeklyCardGoal = settings?.weeklyCardGoal ?? 100;
+      if (weeklyProgress.totalCardsStudied >= weeklyCardGoal && !goalDoc.exists) {
         await _handleGoalAchievement(
           type: 'weekly_cards',
-          goal: settings.weeklyCardGoal,
+          goal: weeklyCardGoal,
           achieved: weeklyProgress.totalCardsStudied,
         );
       }
@@ -306,11 +292,7 @@ class GoalTrackingService {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings == null || !settings.enableGoalReminders) return;
-
-      final notificationSettings = await _preferencesService.getNotificationSettings();
-      if (notificationSettings == null || !notificationSettings.goalAchievements) return;
+      // Goal reminders are always enabled
 
       // Record achievement
       final today = DateTime.now();
@@ -372,7 +354,7 @@ class GoalTrackingService {
         final date = today.subtract(Duration(days: i));
         final progress = await getDailyProgress(date);
         
-        if (progress != null && progress.studyMinutes > 0) {
+        if (progress != null && progress.duration > 0) {
           streak++;
         } else {
           break;
@@ -403,6 +385,47 @@ class GoalTrackingService {
     } catch (e) {
       print('Error getting longest streak: $e');
       return 0;
+    }
+  }
+
+  // Get goal settings
+  Future<GoalSettings?> getGoalSettings() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return null;
+
+      final doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('settings')
+          .doc('goals')
+          .get();
+
+      if (doc.exists) {
+        return GoalSettings.fromMap(doc.data()!);
+      }
+      return null;
+    } catch (e) {
+      print('Error loading goal settings: $e');
+      return null;
+    }
+  }
+
+  // Save goal settings
+  Future<void> saveGoalSettings(GoalSettings settings) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('settings')
+          .doc('goals')
+          .set(settings.toMap());
+    } catch (e) {
+      print('Error saving goal settings: $e');
+      throw Exception('Failed to save goal settings: $e');
     }
   }
 
@@ -446,7 +469,7 @@ class GoalTrackingService {
 // Data models
 class DailyProgress {
   final DateTime date;
-  final int studyMinutes;
+  final int duration;
   final int cardsStudied;
   final int correctAnswers;
   final int incorrectAnswers;
@@ -454,7 +477,7 @@ class DailyProgress {
 
   DailyProgress({
     required this.date,
-    this.studyMinutes = 0,
+    this.duration = 0,
     this.cardsStudied = 0,
     this.correctAnswers = 0,
     this.incorrectAnswers = 0,
@@ -464,7 +487,7 @@ class DailyProgress {
   factory DailyProgress.fromMap(Map<String, dynamic> data) {
     return DailyProgress(
       date: (data['date'] as Timestamp).toDate(),
-      studyMinutes: (data['studyMinutes'] as int?) ?? 0,
+      duration: (data['duration'] as int?) ?? 0,
       cardsStudied: (data['cardsStudied'] as int?) ?? 0,
       correctAnswers: (data['correctAnswers'] as int?) ?? 0,
       incorrectAnswers: (data['incorrectAnswers'] as int?) ?? 0,
@@ -523,4 +546,37 @@ class GoalProgressSummary {
 
   double get weeklyCardProgressPercentage => 
       weeklyCardGoal > 0 ? (weeklyCardProgress / weeklyCardGoal * 100).clamp(0, 100) : 0;
+}
+
+class GoalSettings {
+  final int dailyStudyGoal;
+  final int dailyCardGoal;
+  final int weeklyStudyGoal;
+  final int weeklyCardGoal;
+
+  GoalSettings({
+    required this.dailyStudyGoal,
+    required this.dailyCardGoal,
+    required this.weeklyStudyGoal,
+    required this.weeklyCardGoal,
+  });
+
+  factory GoalSettings.fromMap(Map<String, dynamic> data) {
+    return GoalSettings(
+      dailyStudyGoal: data['dailyStudyGoal'] ?? 30,
+      dailyCardGoal: data['dailyCardGoal'] ?? 20,
+      weeklyStudyGoal: data['weeklyStudyGoal'] ?? 180,
+      weeklyCardGoal: data['weeklyCardGoal'] ?? 100,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'dailyStudyGoal': dailyStudyGoal,
+      'dailyCardGoal': dailyCardGoal,
+      'weeklyStudyGoal': weeklyStudyGoal,
+      'weeklyCardGoal': weeklyCardGoal,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+  }
 }

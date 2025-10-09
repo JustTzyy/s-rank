@@ -543,7 +543,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
 
   Future<void> _restoreCourse(Course course) async {
     try {
-      await _courseService.restoreCourse(course.id!);
+      await _courseService.restoreArchivedCourse(course.id!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

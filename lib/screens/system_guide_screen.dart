@@ -113,7 +113,7 @@ class _SystemGuideScreenState extends State<SystemGuideScreen> {
         _buildStepItem(
           step: '1',
           title: 'Create Your Profile',
-          description: 'Set up your account with profile information including gender, nickname, and birthday.',
+          description: 'Set up your account with profile information including gender, first name, middle name, last name, and birthday.',
         ),
         _buildStepItem(
           step: '2',
@@ -122,18 +122,18 @@ class _SystemGuideScreenState extends State<SystemGuideScreen> {
         ),
         _buildStepItem(
           step: '3',
-          title: 'Start Studying',
-          description: 'Begin study sessions with flashcards. Choose study modes (Review, Due Cards, Random, or Difficult) and rate your performance.',
+          title: 'Study with Flashcards',
+          description: 'Choose from 4 study modes: Review All, Due Cards, Random order, or Difficult Cards only. Study different card types including Basic, Multiple Choice, Enumeration, and Identification.',
         ),
         _buildStepItem(
           step: '4',
-          title: 'Track Progress',
-          description: 'Monitor your learning progress, accuracy, streaks, and ranking improvements in your dashboard and leaderboard.',
+          title: 'Take Challenges',
+          description: 'Complete challenges to earn points and improve your rank. Challenges test your knowledge with various flashcard types and track your accuracy.',
         ),
         _buildStepItem(
           step: '5',
-          title: 'Compete & Learn',
-          description: 'View global leaderboards, track your rank position, and compete with other learners worldwide.',
+          title: 'Track Progress & Compete',
+          description: 'Monitor your learning progress, accuracy, and study streaks. View global leaderboards and track your rank position to compete with other learners.',
         ),
       ],
     );
@@ -147,12 +147,12 @@ class _SystemGuideScreenState extends State<SystemGuideScreen> {
         _buildRuleItem(
           icon: Icons.trending_up,
           title: 'Point System',
-          description: 'Earn points by correctly answering flashcards. Points are based on difficulty: Easy=1, Medium=2, Hard=3, Very Hard=4, Expert=5 points. Incorrect answers earn 0 points.',
+          description: 'Earn points by correctly answering flashcards in challenges. Points are calculated based on difficulty level (1-5) and time spent. Study sessions track progress but only challenges award ranking points.',
         ),
         _buildRuleItem(
           icon: Icons.star,
           title: 'Rank Tiers',
-          description: 'Progress through ranks: C-Rank (0-199 pts) → B-Rank (200-499 pts) → A-Rank (500-999 pts) → S-Rank (1000+ pts).',
+          description: 'Progress through ranks: C-Rank → B-Rank → A-Rank → S-Rank. Your rank is determined by your total points earned from completing challenges.',
         ),
         _buildRuleItem(
           icon: Icons.local_fire_department,
@@ -184,34 +184,34 @@ class _SystemGuideScreenState extends State<SystemGuideScreen> {
       icon: Icons.book,
       children: [
         _buildRuleItem(
-          icon: Icons.repeat,
-          title: 'Spaced Repetition',
-          description: 'Cards use ease factors and intervals for optimal review timing. Cards you rate as "Again" appear sooner, while "Easy" cards have longer intervals.',
-        ),
-        _buildRuleItem(
           icon: Icons.quiz,
           title: 'Flashcard Types',
-          description: 'Study different card types: Basic (front/back), Multiple Choice, Enumeration (lists), and Identification (with images).',
+          description: 'Study 4 different card types: Basic (front/back), Multiple Choice (with options), Enumeration (lists), and Identification (with images). Each type tests different learning skills.',
         ),
         _buildRuleItem(
           icon: Icons.schedule,
           title: 'Study Modes',
-          description: 'Choose from Review All, Due Cards, Random order, or Difficult Cards only. Each mode adapts to your learning needs.',
+          description: 'Choose from 4 study modes: Review All (all cards), Due Cards (cards needing review), Random (shuffled order), or Difficult (hard cards only).',
         ),
         _buildRuleItem(
           icon: Icons.analytics,
-          title: 'Session Tracking',
-          description: 'Track study sessions with accuracy, completion rates, streaks, and time spent per card for detailed progress analysis.',
+          title: 'Progress Tracking',
+          description: 'Track your study progress with accuracy percentages, cards studied, study time, and streaks. Set custom daily and weekly goals.',
         ),
         _buildRuleItem(
           icon: Icons.flag,
-          title: 'Card Rating System',
-          description: 'Rate cards as Again (0-1 days), Hard (1-6 days), Good (1-10 days), or Easy (4+ days) to optimize review intervals.',
+          title: 'Difficulty Levels',
+          description: 'Flashcards have difficulty levels 1-5 (Easy to Expert). Higher difficulty cards provide more challenge and better learning outcomes.',
         ),
         _buildRuleItem(
           icon: Icons.celebration,
-          title: 'Progress Metrics',
-          description: 'Monitor your accuracy percentage, average time per card, total cards studied, and course completion rates.',
+          title: 'Challenge System',
+          description: 'Complete challenges to earn ranking points. Challenges test your knowledge across all flashcard types and track your performance.',
+        ),
+        _buildRuleItem(
+          icon: Icons.timer,
+          title: 'Time Tracking',
+          description: 'Study sessions track time spent per card and total session duration for detailed progress analysis and goal tracking.',
         ),
       ],
     );
@@ -223,28 +223,28 @@ class _SystemGuideScreenState extends State<SystemGuideScreen> {
       icon: Icons.lightbulb,
       children: [
         _buildTipItem(
-          tip: 'Rate Cards Honestly',
-          description: 'Be honest when rating cards (Again, Hard, Good, Easy). This helps the spaced repetition algorithm work effectively.',
-        ),
-        _buildTipItem(
           tip: 'Use Study Modes Wisely',
-          description: 'Start with "Review All" to learn new content, then use "Due Cards" for efficient review sessions.',
+          description: 'Start with "Review All" to learn new content, then use "Due Cards" for efficient review sessions. Use "Random" for variety and "Difficult" to focus on challenging cards.',
         ),
         _buildTipItem(
           tip: 'Focus on Accuracy',
-          description: 'Prioritize correct answers over speed. Only correct answers earn points, and higher difficulty cards give more points.',
+          description: 'Prioritize correct answers over speed. Only correct answers in challenges earn ranking points, and higher difficulty cards provide better learning outcomes.',
         ),
         _buildTipItem(
           tip: 'Track Your Progress',
-          description: 'Monitor your accuracy percentage and study streaks. Consistent improvement is more valuable than perfect scores.',
+          description: 'Monitor your accuracy percentage, study streaks, and goal progress. Set realistic daily and weekly goals to maintain motivation.',
         ),
         _buildTipItem(
           tip: 'Use Different Card Types',
-          description: 'Mix Basic, Multiple Choice, Enumeration, and Identification cards to reinforce learning from different angles.',
+          description: 'Mix Basic, Multiple Choice, Enumeration, and Identification cards to reinforce learning from different angles and improve retention.',
         ),
         _buildTipItem(
-          tip: 'Study Due Cards Daily',
-          description: 'Check your due cards regularly. The spaced repetition system works best with consistent daily practice.',
+          tip: 'Take Regular Challenges',
+          description: 'Complete challenges regularly to earn ranking points and test your knowledge. Challenges are the primary way to improve your rank.',
+        ),
+        _buildTipItem(
+          tip: 'Study Consistently',
+          description: 'Maintain regular study sessions to build streaks and achieve your goals. Consistent practice is more valuable than occasional intensive sessions.',
         ),
       ],
     );

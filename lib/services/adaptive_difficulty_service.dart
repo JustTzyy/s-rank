@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'preferences_service.dart';
 
 class AdaptiveDifficultyService {
   static AdaptiveDifficultyService? _instance;
@@ -14,7 +13,6 @@ class AdaptiveDifficultyService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final PreferencesService _preferencesService = PreferencesService();
 
   // Adjust difficulty based on user performance
   Future<int> adjustDifficulty({
@@ -28,10 +26,7 @@ class AdaptiveDifficultyService {
       final user = _auth.currentUser;
       if (user == null) return currentDifficulty;
 
-      final preferences = await _preferencesService.getStudyPreferences();
-      if (preferences == null || !preferences.adaptiveDifficulty) {
-        return currentDifficulty;
-      }
+      // Adaptive difficulty is always enabled
 
       // Get user's performance history for this card
       final performanceHistory = await _getPerformanceHistory(flashcardId);
@@ -202,10 +197,7 @@ class AdaptiveDifficultyService {
       final user = _auth.currentUser;
       if (user == null) return defaultDifficulty;
 
-      final preferences = await _preferencesService.getStudyPreferences();
-      if (preferences == null || !preferences.adaptiveDifficulty) {
-        return defaultDifficulty;
-      }
+      // Adaptive difficulty is always enabled
 
       final doc = await _firestore
           .collection('users')

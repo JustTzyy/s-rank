@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/flashcard.dart';
 import '../services/flashcard_service.dart';
-import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 
 class EnhancedAddFlashcardModal extends StatefulWidget {
@@ -25,12 +24,10 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
   final _identifierController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final FlashcardService _flashcardService = FlashcardService();
-  final PreferencesService _preferencesService = PreferencesService();
   
   bool _isLoading = false;
   int _selectedDifficulty = 3;
   FlashcardType _selectedType = FlashcardType.basic;
-  StudyPreferences? _studyPreferences;
   
   // For multiple choice
   final List<TextEditingController> _optionControllers = [];
@@ -48,28 +45,9 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
   }
 
   Future<void> _loadPreferences() async {
-    try {
-      _studyPreferences = await _preferencesService.getStudyPreferences();
-      if (_studyPreferences != null) {
-        // Set default difficulty based on preferences
-        switch (_studyPreferences!.defaultDifficulty) {
-          case 'Easy':
-            _selectedDifficulty = 1;
-            break;
-          case 'Medium':
-            _selectedDifficulty = 3;
-            break;
-          case 'Hard':
-            _selectedDifficulty = 5;
-            break;
-          default:
-            _selectedDifficulty = 3;
-        }
-        setState(() {});
-      }
-    } catch (e) {
-      print('Error loading study preferences: $e');
-    }
+    // Set default difficulty to Medium
+    _selectedDifficulty = 3;
+    setState(() {});
   }
 
   @override
@@ -287,7 +265,7 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
             topRight: Radius.circular(20),
           ),
         ),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
@@ -491,10 +469,10 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
       children: [
         TextFormField(
           controller: _frontController,
-          decoration: InputDecoration(
+          decoration: _getInputDecoration(
             labelText: 'Question',
             hintText: 'Enter your question',
-            prefixIcon: Icon(Icons.quiz, color: AppTheme.primaryPurple),
+            prefixIcon: Icons.quiz,
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -506,10 +484,10 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _backController,
-          decoration: InputDecoration(
+          decoration: _getInputDecoration(
             labelText: 'Answer',
             hintText: 'Enter the answer',
-            prefixIcon: Icon(Icons.lightbulb, color: AppTheme.primaryPurple),
+            prefixIcon: Icons.lightbulb,
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -527,10 +505,10 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
       children: [
         TextFormField(
           controller: _frontController,
-          decoration: InputDecoration(
+          decoration: _getInputDecoration(
             labelText: 'Question',
             hintText: 'Enter your question',
-            prefixIcon: Icon(Icons.quiz, color: AppTheme.primaryPurple),
+            prefixIcon: Icons.quiz,
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -566,12 +544,28 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
                           decoration: InputDecoration(
                             labelText: 'Option ${String.fromCharCode(65 + index)}',
                             hintText: 'Enter option text',
+                            hintStyle: const TextStyle(color: AppTheme.textSecondary),
                             prefixIcon: Icon(
                               Icons.radio_button_unchecked,
                               color: _correctOptionIndex == index 
                                   ? Colors.green 
                                   : AppTheme.primaryPurple,
                             ),
+                            filled: true,
+                            fillColor: AppTheme.backgroundColor,
+                            border: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderSide: BorderSide(color: AppTheme.borderColor),
+                            ),
+                            enabledBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderSide: BorderSide(color: AppTheme.borderColor),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -669,10 +663,10 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
       children: [
         TextFormField(
           controller: _frontController,
-          decoration: InputDecoration(
+          decoration: _getInputDecoration(
             labelText: 'Topic',
             hintText: 'Enter the topic to enumerate',
-            prefixIcon: Icon(Icons.topic, color: AppTheme.primaryPurple),
+            prefixIcon: Icons.topic,
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -727,7 +721,23 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
                           decoration: InputDecoration(
                             labelText: 'Item ${index + 1}',
                             hintText: 'Enter item text',
-                            prefixIcon: Icon(Icons.format_list_numbered, color: AppTheme.primaryPurple),
+                            hintStyle: const TextStyle(color: AppTheme.textSecondary),
+                            prefixIcon: const Icon(Icons.format_list_numbered, color: AppTheme.primaryPurple),
+                            filled: true,
+                            fillColor: AppTheme.backgroundColor,
+                            border: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderSide: BorderSide(color: AppTheme.borderColor),
+                            ),
+                            enabledBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderSide: BorderSide(color: AppTheme.borderColor),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -803,10 +813,10 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
       children: [
         TextFormField(
           controller: _frontController,
-          decoration: InputDecoration(
+          decoration: _getInputDecoration(
             labelText: 'What to identify',
             hintText: 'e.g., "Identify this organ", "Name this structure"',
-            prefixIcon: Icon(Icons.search, color: AppTheme.primaryPurple),
+            prefixIcon: Icons.search,
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -818,19 +828,19 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
         const SizedBox(height: 16),
         TextFormField(
           controller: _imageUrlController,
-          decoration: InputDecoration(
+          decoration: _getInputDecoration(
             labelText: 'Image URL (Optional)',
             hintText: 'Enter image URL',
-            prefixIcon: Icon(Icons.image, color: AppTheme.primaryPurple),
+            prefixIcon: Icons.image,
           ),
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: _identifierController,
-          decoration: InputDecoration(
+          decoration: _getInputDecoration(
             labelText: 'Answer/Identifier',
             hintText: 'Enter the correct answer',
-            prefixIcon: Icon(Icons.lightbulb, color: AppTheme.primaryPurple),
+            prefixIcon: Icons.lightbulb,
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -880,5 +890,33 @@ class _EnhancedAddFlashcardModalState extends State<EnhancedAddFlashcardModal> {
       case FlashcardType.identification:
         return 'Identification';
     }
+  }
+
+  InputDecoration _getInputDecoration({
+    required String labelText,
+    required String hintText,
+    required IconData prefixIcon,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      hintStyle: const TextStyle(color: AppTheme.textSecondary),
+      prefixIcon: Icon(prefixIcon, color: AppTheme.primaryPurple),
+      filled: true,
+      fillColor: AppTheme.backgroundColor,
+      border: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: AppTheme.borderColor),
+      ),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: AppTheme.borderColor),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+    );
   }
 }

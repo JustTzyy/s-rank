@@ -3,7 +3,6 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'preferences_service.dart';
 
 class NotificationService {
   static NotificationService? _instance;
@@ -18,7 +17,6 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final PreferencesService _preferencesService = PreferencesService();
 
   bool _isInitialized = false;
 
@@ -69,18 +67,15 @@ class NotificationService {
       // Cancel existing study reminders
       await cancelStudyReminders();
 
-      final preferences = await _preferencesService.getStudyPreferences();
-      if (preferences == null || !preferences.studyRemindersEnabled) return;
+      // Study reminders are always enabled
 
-      final notificationSettings = await _preferencesService.getNotificationSettings();
-      if (notificationSettings == null || !notificationSettings.notificationsEnabled) return;
-
-      // Schedule reminders for each selected day
-      for (final day in preferences.selectedReminderDays) {
+      // Schedule reminders for default days (Monday, Wednesday, Friday)
+      final defaultDays = ['Monday', 'Wednesday', 'Friday'];
+      for (final day in defaultDays) {
         await _scheduleWeeklyReminder(
           day: day,
-          hour: preferences.reminderHour,
-          minute: preferences.reminderMinute,
+          hour: 19, // 7 PM
+          minute: 0,
         );
       }
     } catch (e) {

@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import '../services/progress_tracking_service.dart';
-import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
+import '../screens/progress_history_screen.dart';
 
 class ProgressDashboard extends StatefulWidget {
   const ProgressDashboard({super.key});
 
   @override
-  State<ProgressDashboard> createState() => _ProgressDashboardState();
+  State<ProgressDashboard> createState() => ProgressDashboardState();
 }
 
-class _ProgressDashboardState extends State<ProgressDashboard> {
+class ProgressDashboardState extends State<ProgressDashboard> {
   final ProgressTrackingService _progressService = ProgressTrackingService();
-  final PreferencesService _preferencesService = PreferencesService();
   
   GoalProgress? _goalProgress;
   int _studyStreak = 0;
   bool _isLoading = true;
-  ProgressSettings? _progressSettings;
 
   @override
   void initState() {
@@ -25,24 +23,22 @@ class _ProgressDashboardState extends State<ProgressDashboard> {
     _loadProgressData();
   }
 
+  // Method to refresh progress data (can be called from parent)
+  Future<void> refreshProgress() async {
+    await _loadProgressData();
+  }
+
   Future<void> _loadProgressData() async {
     try {
-      final settings = await _preferencesService.getProgressSettings();
-      if (settings != null && settings.showProgressInHome) {
-        final goalProgress = await _progressService.getGoalProgress();
-        final studyStreak = await _progressService.getStudyStreak();
-        
-        setState(() {
-          _progressSettings = settings;
-          _goalProgress = goalProgress;
-          _studyStreak = studyStreak;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      // Progress tracking is always enabled
+      final goalProgress = await _progressService.getGoalProgress();
+      final studyStreak = await _progressService.getStudyStreak();
+      
+      setState(() {
+        _goalProgress = goalProgress;
+        _studyStreak = studyStreak;
+        _isLoading = false;
+      });
     } catch (e) {
       print('Error loading progress data: $e');
       setState(() {
@@ -57,16 +53,22 @@ class _ProgressDashboardState extends State<ProgressDashboard> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_progressSettings == null || !_progressSettings!.showProgressInHome) {
-      return const SizedBox.shrink();
-    }
+    // Progress dashboard is always shown
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryPurple.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const ProgressHistoryScreen(),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryPurple.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppTheme.primaryPurple.withOpacity(0.15),
           width: 1,
@@ -132,15 +134,13 @@ class _ProgressDashboardState extends State<ProgressDashboard> {
           
           if (_goalProgress != null) ...[
             // Daily Study Time Progress
-            if (_progressSettings!.trackStudyTime) ...[
-              _buildProgressItem(
-                'Study Time',
-                '${_goalProgress!.dailyStudyProgress} / ${_goalProgress!.dailyStudyGoal} min',
-                _goalProgress!.dailyStudyProgressPercentage,
-                Icons.timer,
-              ),
-              const SizedBox(height: 12),
-            ],
+            _buildProgressItem(
+              'Study Time',
+              '${_goalProgress!.dailyStudyProgress} / ${_goalProgress!.dailyStudyGoal} min',
+              _goalProgress!.dailyStudyProgressPercentage,
+              Icons.timer,
+            ),
+            const SizedBox(height: 12),
             
             // Daily Cards Progress
             _buildProgressItem(
@@ -152,30 +152,29 @@ class _ProgressDashboardState extends State<ProgressDashboard> {
             const SizedBox(height: 12),
             
             // Weekly Progress
-            if (_progressSettings!.showDailyGoals) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildWeeklyProgressItem(
-                      'Weekly Study',
-                      '${_goalProgress!.weeklyStudyProgress} / ${_goalProgress!.weeklyStudyGoal} min',
-                      _goalProgress!.weeklyStudyProgressPercentage,
-                    ),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildWeeklyProgressItem(
+                    'Weekly Study',
+                    '${_goalProgress!.weeklyStudyProgress} / ${_goalProgress!.weeklyStudyGoal} min',
+                    _goalProgress!.weeklyStudyProgressPercentage,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildWeeklyProgressItem(
-                      'Weekly Cards',
-                      '${_goalProgress!.weeklyCardProgress} / ${_goalProgress!.weeklyCardGoal}',
-                      _goalProgress!.weeklyCardProgressPercentage,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildWeeklyProgressItem(
+                    'Weekly Cards',
+                    '${_goalProgress!.weeklyCardProgress} / ${_goalProgress!.weeklyCardGoal}',
+                    _goalProgress!.weeklyCardProgressPercentage,
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ],
         ],
       ),
+    ),
     );
   }
 

@@ -169,6 +169,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   controller: _firstNameController,
                   decoration: const InputDecoration(
                     hintText: 'Enter First Name',
+                    hintStyle: TextStyle(color: AppTheme.textSecondary),
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -192,6 +208,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   controller: _middleNameController,
                   decoration: const InputDecoration(
                     hintText: 'Enter Middle Name (Optional)',
+                    hintStyle: TextStyle(color: AppTheme.textSecondary),
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
                   validator: (value) {
                     // Middle name is optional, so no validation needed
@@ -210,6 +242,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   controller: _lastNameController,
                   decoration: const InputDecoration(
                     hintText: 'Enter Last Name',
+                    hintStyle: TextStyle(color: AppTheme.textSecondary),
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -235,7 +283,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     decoration: BoxDecoration(
                       color: AppTheme.backgroundColor,
-                      border: Border.all(color: AppTheme.borderColor),
+                      border: Border.all(color: AppTheme.borderColor, width: 1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -266,6 +314,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 // Next button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _completeProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryPurple,
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  ),
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
@@ -275,7 +332,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Next'),
+                      : const Text(
+                          'Next',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -302,7 +365,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             color: isSelected ? color : AppTheme.borderColor,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
