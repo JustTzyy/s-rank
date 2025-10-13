@@ -203,17 +203,13 @@ class DeckService {
     }
   }
 
-  // Restore deck from archive - cascades to flashcards
+  // Restore deck from archive - only restores the deck itself
   Future<void> restoreDeck(String deckId) async {
     try {
-      // First, restore the deck
+      // Only restore the deck, not the flashcards
       await _decksCollection.doc(deckId).update({
         'deletedAt': FieldValue.delete(),
       });
-      
-      // Then restore all flashcards in this deck
-      final FlashcardService flashcardService = FlashcardService();
-      await flashcardService.restoreAllFlashcardsInDeck(deckId);
     } catch (e) {
       throw DeckException('Failed to restore deck: $e');
     }

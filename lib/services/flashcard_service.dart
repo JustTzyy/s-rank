@@ -294,26 +294,6 @@ class FlashcardService {
     }
   }
 
-  // Restore all flashcards in a deck from archive
-  Future<void> restoreAllFlashcardsInDeck(String deckId) async {
-    try {
-      final snapshot = await _flashcardsCollection
-          .where('deckId', isEqualTo: deckId)
-          .where('deletedAt', isNull: false) // Only get archived flashcards
-          .get();
-      
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {
-          'deletedAt': FieldValue.delete(),
-        });
-      }
-      
-      await batch.commit();
-    } catch (e) {
-      throw FlashcardException('Failed to restore all flashcards in deck: $e');
-    }
-  }
 
   // Delete flashcard forever (hard delete)
   Future<void> deleteFlashcardForever(String flashcardId) async {

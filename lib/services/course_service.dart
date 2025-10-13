@@ -204,16 +204,13 @@ class CourseService {
     }
   }
 
-  // Restore course from archive - cascades to decks and flashcards
+  // Restore course from archive - only restores the course itself
   Future<void> restoreArchivedCourse(String courseId) async {
     try {
-      // First, restore the course
+      // Only restore the course, not the decks and flashcards
       await _coursesCollection.doc(courseId).update({
         'deletedAt': FieldValue.delete(),
       });
-      
-      // Then restore all decks in this course
-      await _restoreAllDecksInCourse(courseId);
     } catch (e) {
       throw CourseException('Failed to restore archived course: $e');
     }
@@ -269,46 +266,6 @@ class CourseService {
     }
   }
 
-  // Helper method to restore all decks in a course
-  Future<void> _restoreAllDecksInCourse(String courseId) async {
-    try {
-      final decksCollection = FirebaseFirestore.instance.collection('decks');
-      final flashcardsCollection = FirebaseFirestore.instance.collection('flashcards');
-      
-      // Get all archived decks in this course
-      final decksSnapshot = await decksCollection
-          .where('courseId', isEqualTo: courseId)
-          .where('deletedAt', isNull: false) // Only get archived decks
-          .get();
-      
-      // Restore each deck and its flashcards
-      for (final deckDoc in decksSnapshot.docs) {
-        final deckId = deckDoc.id;
-        
-        // Restore all flashcards in this deck first
-        final flashcardsSnapshot = await flashcardsCollection
-            .where('deckId', isEqualTo: deckId)
-            .where('deletedAt', isNull: false) // Only get archived flashcards
-            .get();
-        
-        final batch = FirebaseFirestore.instance.batch();
-        for (final flashcardDoc in flashcardsSnapshot.docs) {
-          batch.update(flashcardDoc.reference, {
-            'deletedAt': FieldValue.delete(),
-          });
-        }
-        
-        // Restore the deck
-        batch.update(deckDoc.reference, {
-          'deletedAt': FieldValue.delete(),
-        });
-        
-        await batch.commit();
-      }
-    } catch (e) {
-      throw CourseException('Failed to restore all decks in course: $e');
-    }
-  }
 }
 
 // Custom exception class for course operations

@@ -132,78 +132,73 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
   }
 
   Widget _buildArchivedDecks() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('decks')
-          .where('createdby', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        }
-
-        // Filter archived decks in memory (where deletedAt is not null)
-        final decks = snapshot.data?.docs
-            .map((doc) => Deck.fromFirestore(doc))
-            .where((deck) => deck.deletedAt != null)
-            .toList() ?? [];
-        
-        // Sort by deletedAt in memory
-        decks.sort((a, b) {
-          if (a.deletedAt == null && b.deletedAt == null) return 0;
-          if (a.deletedAt == null) return 1;
-          if (b.deletedAt == null) return -1;
-          return b.deletedAt!.compareTo(a.deletedAt!);
-        });
-
-        if (decks.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.library_books_outlined,
-            title: 'No Archived Decks',
-            subtitle: 'Deleted decks will appear here',
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: decks.length,
-          itemBuilder: (context, index) {
-            final deck = decks[index];
-            return _buildArchivedDeckCard(deck);
-          },
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {});
       },
+      child: FutureBuilder<List<Deck>>(
+        future: _getUserArchivedDecks(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
+
+          final decks = snapshot.data ?? [];
+          
+          // Sort by deletedAt in memory
+          decks.sort((a, b) {
+            if (a.deletedAt == null && b.deletedAt == null) return 0;
+            if (a.deletedAt == null) return 1;
+            if (b.deletedAt == null) return -1;
+            return b.deletedAt!.compareTo(a.deletedAt!);
+          });
+
+          if (decks.isEmpty) {
+            return _buildEmptyState(
+              icon: Icons.library_books_outlined,
+              title: 'No Archived Decks',
+              subtitle: 'Deleted decks will appear here',
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: decks.length,
+            itemBuilder: (context, index) {
+              final deck = decks[index];
+              return _buildArchivedDeckCard(deck);
+            },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildArchivedFlashcards() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('flashcards')
-          .where('createdby', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {});
+      },
+      child: FutureBuilder<List<Flashcard>>(
+        future: _getUserArchivedFlashcardsSimple(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          }
 
-        // Filter archived flashcards in memory (where deletedAt is not null)
-        final flashcards = snapshot.data?.docs
-            .map((doc) => Flashcard.fromFirestore(doc))
-            .where((flashcard) => flashcard.deletedAt != null)
-            .toList() ?? [];
+          final flashcards = snapshot.data ?? [];
         
         // Sort by deletedAt in memory
         flashcards.sort((a, b) {
@@ -229,7 +224,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
             return _buildArchivedFlashcardCard(flashcard);
           },
         );
-      },
+        },
+      ),
     );
   }
 
@@ -501,6 +497,107 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
     );
   }
 
+
+  Future<List<Deck>> _getUserArchivedDecks() async {
+    try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId == null) return [];
+
+      // Get all courses created by the user
+      final coursesSnapshot = await FirebaseFirestore.instance
+          .collection('courses')
+          .where('createdby', isEqualTo: currentUserId)
+          .get();
+
+      if (coursesSnapshot.docs.isEmpty) return [];
+
+      // Get all deck IDs from user's courses
+      final courseIds = coursesSnapshot.docs.map((doc) => doc.id).toList();
+      
+      // Handle whereIn limit (max 10 items)
+      List<QueryDocumentSnapshot> allDecks = [];
+      for (int i = 0; i < courseIds.length; i += 10) {
+        final batch = courseIds.skip(i).take(10).toList();
+        final decksSnapshot = await FirebaseFirestore.instance
+            .collection('decks')
+            .where('courseId', whereIn: batch)
+            .get();
+        allDecks.addAll(decksSnapshot.docs);
+      }
+
+      // Filter for archived decks
+      final archivedDecks = <Deck>[];
+      for (var doc in allDecks) {
+        final data = doc.data() as Map<String, dynamic>;
+        final deletedAt = data['deletedAt'];
+        
+        // Check if deck is archived
+        if (deletedAt != null) {
+          archivedDecks.add(Deck.fromFirestore(doc));
+        }
+      }
+
+      return archivedDecks;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Flashcard>> _getUserArchivedFlashcardsSimple() async {
+    try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId == null) return [];
+
+      // Get all flashcards and filter in memory
+      final allFlashcardsSnapshot = await FirebaseFirestore.instance
+          .collection('flashcards')
+          .get();
+
+      // Filter for archived flashcards
+      final archivedFlashcards = <Flashcard>[];
+      
+      for (var doc in allFlashcardsSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final deletedAt = data['deletedAt'];
+        final deckId = data['deckId'];
+        
+        // Check if flashcard is archived
+        if (deletedAt != null) {
+          // Check if this deck belongs to user's courses
+          final deckDoc = await FirebaseFirestore.instance
+              .collection('decks')
+              .doc(deckId)
+              .get();
+          
+          if (deckDoc.exists) {
+            final deckData = deckDoc.data()!;
+            final courseId = deckData['courseId'];
+            
+            // Check if course belongs to user
+            final courseDoc = await FirebaseFirestore.instance
+                .collection('courses')
+                .doc(courseId)
+                .get();
+            
+            if (courseDoc.exists) {
+              final courseData = courseDoc.data()!;
+              final courseCreatedBy = courseData['createdby'];
+              
+              if (courseCreatedBy == currentUserId) {
+                archivedFlashcards.add(Flashcard.fromFirestore(doc));
+              }
+            }
+          }
+        }
+      }
+
+      return archivedFlashcards;
+    } catch (e) {
+      return [];
+    }
+  }
+
+
   String _formatDate(DateTime? date) {
     if (date == null) return 'Unknown';
     final now = DateTime.now();
@@ -598,6 +695,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
     try {
       await _deckService.restoreDeck(deck.id!);
       if (mounted) {
+        setState(() {}); // Refresh the list
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Deck "${deck.title}" restored successfully!'),
@@ -627,6 +725,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
       try {
         await _deckService.deleteDeckForever(deck.id!);
         if (mounted) {
+          setState(() {}); // Refresh the list
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Deck "${deck.title}" deleted forever!'),
@@ -651,6 +750,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
     try {
       await _flashcardService.restoreFlashcard(flashcard.id!);
       if (mounted) {
+        setState(() {}); // Refresh the list
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Flashcard restored successfully!'),
@@ -680,6 +780,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> with TickerProviderStateM
       try {
         await _flashcardService.deleteFlashcardForever(flashcard.id!);
         if (mounted) {
+          setState(() {}); // Refresh the list
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Flashcard deleted forever!'),

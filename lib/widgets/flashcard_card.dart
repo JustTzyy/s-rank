@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/flashcard.dart';
 import '../theme/app_theme.dart';
 
@@ -426,7 +427,7 @@ class FlashcardCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 12),
-        if (flashcard.imageUrl != null) ...[
+        if (flashcard.imageUrl != null && flashcard.imageUrl!.isNotEmpty) ...[
           Container(
             height: 100,
             width: double.infinity,
@@ -436,14 +437,70 @@ class FlashcardCard extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                flashcard.imageUrl!,
+              child: CachedNetworkImage(
+                imageUrl: flashcard.imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.image,
-                    color: Colors.grey[400],
-                    size: 40,
+                httpHeaders: const {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                },
+                placeholder: (context, url) {
+                  print('Loading image: $url');
+                  return Container(
+                    color: Colors.grey[200],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPurple),
+                      ),
+                    ),
+                  );
+                },
+                errorWidget: (context, url, error) {
+                  print('Image load error for URL: $url');
+                  print('Error: $error');
+                  
+                  // Try to provide more helpful error message
+                  String errorMessage = 'Image failed to load';
+                  if (error.toString().contains('EncodingError')) {
+                    errorMessage = 'Image format not supported';
+                  } else if (error.toString().contains('NetworkException')) {
+                    errorMessage = 'Network error';
+                  } else if (error.toString().contains('404')) {
+                    errorMessage = 'Image not found';
+                  }
+                  
+                  return Container(
+                    color: Colors.grey[200],
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey[400],
+                            size: 30,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            errorMessage,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[500],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Try a different image URL',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.grey[400],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
