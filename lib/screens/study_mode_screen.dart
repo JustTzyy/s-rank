@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/study_session.dart';
 import '../models/flashcard.dart';
 import '../services/study_service.dart';
@@ -679,7 +678,7 @@ class _StudyModeScreenState extends State<StudyModeScreen>
   Widget _buildIdentificationQuestion(Flashcard card) {
     return Column(
       children: [
-        if (card.imageUrl != null && card.imageUrl!.isNotEmpty) ...[
+        if (card.imageUrl != null) ...[
           Container(
             height: 200,
             width: double.infinity,
@@ -689,54 +688,14 @@ class _StudyModeScreenState extends State<StudyModeScreen>
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: card.imageUrl!,
+              child: Image.network(
+                card.imageUrl!,
                 fit: BoxFit.cover,
-                httpHeaders: const {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                },
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPurple),
-                    ),
-                  ),
-                ),
-                errorWidget: (context, url, error) {
-                  String errorMessage = 'Image failed to load';
-                  if (error.toString().contains('EncodingError')) {
-                    errorMessage = 'Image format not supported';
-                  } else if (error.toString().contains('NetworkException')) {
-                    errorMessage = 'Network error';
-                  } else if (error.toString().contains('404')) {
-                    errorMessage = 'Image not found';
-                  }
-                  
-                  return Container(
-                    color: Colors.grey[200],
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_not_supported,
-                            color: Colors.grey[400],
-                            size: 40,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            errorMessage,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.image,
+                    color: Colors.grey[400],
+                    size: 50,
                   );
                 },
               ),
